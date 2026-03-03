@@ -1,0 +1,53 @@
+name: Slack Build Status — Create
+description: Post an initial build status message to Slack
+
+inputs:
+  token:
+    description: Slack Bot OAuth token (e.g. "xoxb-1234567890-1234567890123-abc")
+    required: true
+  channel-id:
+    description: Slack channel ID to post to (e.g. "C0123456789")
+    required: true
+  builds:
+    description: >
+      JSON array of builds. Each object: { name, label, group, status?, link? }
+      Example: [{"name":"apk","label":"APK","group":"Android","status":"running"}]
+    required: true
+  version:
+    description: Build version string (e.g. "1.2.3")
+    required: true
+  branch:
+    description: Git branch name (e.g. "main")
+    required: true
+  git-url:
+    description: URL to the git commit/branch (e.g. "https://github.com/owner/repo/tree/main")
+    required: true
+  changelog:
+    description: Changelog text (PR references like (#123) are auto-linked, e.g. "- feat: add login (#1)\n- fix: crash (#2)")
+    required: false
+  changelog-compare-url:
+    description: URL for the changelog compare link header (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")
+    required: false
+  icon:
+    description: Icon emoji/text to prepend to header (e.g. app icon)
+    required: false
+  extra-badges:
+    description: Additional badge emojis for the header (e.g. ":badge-staging:")
+    required: false
+  thread-replies:
+    description: 'JSON array of thread replies: [{"text":"..."}]'
+    required: false
+  notify-users:
+    description: Slack user mentions to CC in thread (e.g. "<@U123> <@U456>")
+    required: false
+  repo:
+    description: GitHub repo (owner/name) for PR link detection. Defaults to current repo. (e.g. "owner/repo")
+    required: false
+
+outputs:
+  ts:
+    description: Slack message timestamp (used to update the message later)
+
+runs:
+  using: node20
+  main: ../dist/create/index.js

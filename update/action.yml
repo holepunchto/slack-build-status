@@ -1,0 +1,29 @@
+name: Slack Build Status — Update
+description: Update a specific build's status in an existing Slack message
+
+inputs:
+  token:
+    description: Slack Bot OAuth token (e.g. "xoxb-1234567890-1234567890123-abc")
+    required: true
+  channel-id:
+    description: Slack channel ID (e.g. "C0123456789")
+    required: true
+  ts:
+    description: Slack message timestamp to update (e.g. "1234567890.123456")
+    required: true
+  build-name:
+    description: Name of the build to update (must match a name from the create step, e.g. "apk")
+    required: true
+  status:
+    description: New status — one of "success", "failure", "cancelled", "skipped", or GitHub job.status
+    required: true
+  link:
+    description: URL to attach to this build (e.g. artifact download link)
+    required: false
+  also-update:
+    description: 'JSON array of additional updates: [{"name":"...","status":"...","link":"..."}]'
+    required: false
+
+runs:
+  using: node20
+  main: ../dist/update/index.js

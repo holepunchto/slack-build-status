@@ -1,0 +1,31 @@
+{
+  "name": "slack-build-status",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:create && npm run build:update && npm run build:cancel-all && npm run build:upload",
+    "build:create": "ncc build src/create.ts -o dist/create --license licenses.txt",
+    "build:update": "ncc build src/update.ts -o dist/update --license licenses.txt",
+    "build:cancel-all": "ncc build src/cancel-all.ts -o dist/cancel-all --license licenses.txt",
+    "build:upload": "ncc build src/upload.ts -o dist/upload --license licenses.txt",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write ."
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.0",
+    "@slack/web-api": "^7.8.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.0.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

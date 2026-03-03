@@ -1,0 +1,17 @@
+name: Slack Build Status — Cancel All
+description: Mark all pending/running builds as cancelled in a Slack status message
+
+inputs:
+  token:
+    description: Slack Bot OAuth token (e.g. "xoxb-1234567890-1234567890123-abc")
+    required: true
+  channel-id:
+    description: Slack channel ID (e.g. "C0123456789")
+    required: true
+  ts:
+    description: Slack message timestamp to update (e.g. "1234567890.123456")
+    required: true
+
+runs:
+  using: node20
+  main: ../dist/cancel-all/index.js

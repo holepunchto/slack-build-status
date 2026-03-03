@@ -1,0 +1,29 @@
+name: Slack Build Status — Upload
+description: Upload a file to a Slack message thread
+
+inputs:
+  token:
+    description: Slack Bot OAuth token (e.g. "xoxb-1234567890-1234567890123-abc")
+    required: true
+  channel-id:
+    description: Slack channel ID (e.g. "C0123456789")
+    required: true
+  ts:
+    description: Slack message thread timestamp (e.g. "1234567890.123456")
+    required: true
+  file-path:
+    description: Path to the file to upload (e.g. "build/outputs/app.apk")
+    required: true
+  filename:
+    description: Override filename (defaults to basename of file-path, e.g. "app-v1.2.3.apk")
+    required: false
+
+outputs:
+  file-url:
+    description: Permalink URL of the uploaded file
+  file-id:
+    description: Slack file ID
+
+runs:
+  using: node20
+  main: ../dist/upload/index.js

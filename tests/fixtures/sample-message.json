@@ -1,0 +1,38 @@
+{
+  "channel": "C123456",
+  "ts": "1234567890.123456",
+  "blocks": [
+    {
+      "type": "section",
+      "block_id": "header",
+      "text": {
+        "type": "mrkdwn",
+        "text": ":app-icon: *<https://github.com/org/repo/tree/main|1.2.3 (main)>*"
+      }
+    },
+    {
+      "type": "section",
+      "block_id": "statuses",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "Android:\napk :ga-running: | SV :ga-pending: | aab :ga-pending:"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "iOS:\nTestflight :ga-pending:"
+        }
+      ]
+    },
+    {
+      "type": "context",
+      "block_id": "changelog",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "*<https://github.com/org/repo/compare/v1.1.0..main|Changelog:>*\nfeat: add login (#1)\nfix: crash (#2)"
+        }
+      ]
+    }
+  ]
+}
