@@ -20,6 +20,9 @@ inputs:
   link:
     description: URL to attach to this build (e.g. artifact download link)
     required: false
+  file-path:
+    description: File to upload to the thread and link to this build (e.g. "build/outputs/app.apk")
+    required: false
   also-update:
     description: 'JSON array of additional updates: [{"name":"...","status":"...","link":"..."}]'
     required: false

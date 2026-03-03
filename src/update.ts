@@ -16,12 +16,21 @@ async function run(): Promise<void> {
     const ts = core.getInput("ts", { required: true });
     const buildName = core.getInput("build-name", { required: true });
     const statusInput = core.getInput("status", { required: true });
-    const link = core.getInput("link") || undefined;
+    let link = core.getInput("link") || undefined;
+    const filePath = core.getInput("file-path") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
 
     core.info(`Updating build "${buildName}" to "${statusInput}" (ts: ${ts})`);
 
     const client = new SlackClient(token);
+
+    if (filePath) {
+      core.info(`Uploading "${filePath}" to thread`);
+      const { fileUrl } = await client.uploadFile(channelId, ts, filePath);
+      link = link ?? fileUrl;
+      core.info(`File uploaded: ${fileUrl}`);
+    }
+
     const message = await client.getMessage(channelId, ts);
     core.info(`Fetched message with ${message.blocks.length} blocks`);
 

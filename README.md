@@ -41,6 +41,7 @@ Update a specific build's status in an existing message.
 | `build-name` | yes | `apk` | Build name to update (must match `name` from `create`) |
 | `status` | yes | `success` | New status: `success`, `failure`, `cancelled`, `skipped`, or GitHub `job.status` |
 | `link` | no | `https://example.com/download/app.apk` | URL to attach (e.g. artifact download link) |
+| `file-path` | no | `build/outputs/app.apk` | File to upload to thread and link to this build |
 | `also-update` | no | `[{"name":"aab","status":"running"}]` | JSON array of additional updates: `{name, status, link?}` |
 
 ### `cancel-all`

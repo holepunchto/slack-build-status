@@ -160,7 +160,9 @@ export function updateBuildInBlocks(
 
     const statusLine = lines.slice(1).join("\n");
     const parsed = parseStatusText(statusLine);
-    const buildIndex = parsed.findIndex((p) => p.name === buildName);
+    const buildIndex = parsed.findIndex(
+      (p) => p.name === buildName || p.name.toLowerCase() === buildName.toLowerCase(),
+    );
     if (buildIndex === -1) continue;
 
     parsed[buildIndex].emoji = STATUS_EMOJI[newStatus];
