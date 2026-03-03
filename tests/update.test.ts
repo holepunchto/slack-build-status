@@ -8,6 +8,7 @@ vi.mock("@actions/core", () => ({
   getInput: (...args: any[]) => mockGetInput(...args),
   setOutput: (...args: any[]) => mockSetOutput(...args),
   setFailed: (...args: any[]) => mockSetFailed(...args),
+  info: vi.fn(),
 }));
 
 const mockGetMessage = vi.fn();
@@ -46,6 +47,7 @@ describe("update action", () => {
       getInput: (...args: any[]) => mockGetInput(...args),
       setOutput: (...args: any[]) => mockSetOutput(...args),
       setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
     }));
     vi.doMock("../src/slack-client.js", () => ({
       SlackClient: vi.fn().mockImplementation(() => ({
@@ -78,6 +80,7 @@ describe("update action", () => {
       getInput: (...args: any[]) => mockGetInput(...args),
       setOutput: (...args: any[]) => mockSetOutput(...args),
       setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
     }));
     vi.doMock("../src/slack-client.js", () => ({
       SlackClient: vi.fn().mockImplementation(() => ({
@@ -104,6 +107,7 @@ describe("update action", () => {
       getInput: (...args: any[]) => mockGetInput(...args),
       setOutput: (...args: any[]) => mockSetOutput(...args),
       setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
     }));
     vi.doMock("../src/slack-client.js", () => ({
       SlackClient: vi.fn().mockImplementation(() => ({

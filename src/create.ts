@@ -37,6 +37,9 @@ async function run(): Promise<void> {
       core.getInput("repo") || `${github.context.repo.owner}/${github.context.repo.repo}`;
 
     const builds = parseBuilds(buildsJson);
+    core.info(
+      `Posting status for ${builds.length} builds: ${builds.map((b) => b.name).join(", ")}`,
+    );
 
     const payload = buildMessage(
       channelId,
@@ -59,6 +62,7 @@ async function run(): Promise<void> {
       unfurl_media: payload.unfurl_media,
     });
 
+    core.info(`Message posted (ts: ${ts})`);
     core.setOutput("ts", ts);
 
     if (threadRepliesJson) {

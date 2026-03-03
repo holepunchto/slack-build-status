@@ -19,8 +19,11 @@ async function run(): Promise<void> {
     const link = core.getInput("link") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
 
+    core.info(`Updating build "${buildName}" to "${statusInput}" (ts: ${ts})`);
+
     const client = new SlackClient(token);
     const message = await client.getMessage(channelId, ts);
+    core.info(`Fetched message with ${message.blocks.length} blocks`);
 
     const status = mapJobStatus(statusInput);
     let blocks = updateBuildInBlocks(message.blocks, buildName, status, link);
@@ -28,12 +31,14 @@ async function run(): Promise<void> {
     if (alsoUpdateJson) {
       const alsoUpdates: AlsoUpdate[] = JSON.parse(alsoUpdateJson);
       for (const update of alsoUpdates) {
+        core.info(`Also updating "${update.name}" to "${update.status}"`);
         const updateStatus = mapJobStatus(update.status);
         blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link);
       }
     }
 
     await client.updateMessage(channelId, ts, blocks);
+    core.info("Message updated successfully");
   } catch (error) {
     core.setFailed(error instanceof Error ? error.message : String(error));
   }

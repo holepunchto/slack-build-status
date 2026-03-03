@@ -9,8 +9,10 @@ async function run(): Promise<void> {
     const filePath = core.getInput("file-path", { required: true });
     const filename = core.getInput("filename") || undefined;
 
+    core.info(`Uploading "${filename ?? filePath}" to thread (ts: ${ts})`);
     const client = new SlackClient(token);
     const { fileUrl, fileId } = await client.uploadFile(channelId, ts, filePath, filename);
+    core.info(`File uploaded: ${fileUrl}`);
 
     core.setOutput("file-url", fileUrl);
     core.setOutput("file-id", fileId);
