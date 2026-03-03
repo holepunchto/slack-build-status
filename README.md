@@ -130,7 +130,7 @@ jobs:
             echo "compare_url=$compare_url"
           } >> "$GITHUB_OUTPUT"
 
-      - uses: owner/slack-build-status/create@v1
+      - uses: holepunchto/slack-build-status/create@v1
         id: slack
         with:
           token: ${{ secrets.SLACK_TOKEN }}
@@ -157,7 +157,7 @@ jobs:
     steps:
       - run: echo "building..."
 
-      - uses: owner/slack-build-status/update@v1
+      - uses: holepunchto/slack-build-status/update@v1
         if: always()
         with:
           token: ${{ secrets.SLACK_TOKEN }}
@@ -167,7 +167,7 @@ jobs:
           status: ${{ job.status }}
           link: https://example.com/download/apk
 
-      - uses: owner/slack-build-status/upload@v1
+      - uses: holepunchto/slack-build-status/upload@v1
         if: success()
         with:
           token: ${{ secrets.SLACK_TOKEN }}
@@ -181,7 +181,7 @@ jobs:
     steps:
       - run: echo "building..."
 
-      - uses: owner/slack-build-status/update@v1
+      - uses: holepunchto/slack-build-status/update@v1
         if: always()
         with:
           token: ${{ secrets.SLACK_TOKEN }}
@@ -190,7 +190,7 @@ jobs:
           build-name: ios
           status: ${{ job.status }}
 
-      - uses: owner/slack-build-status/upload@v1
+      - uses: holepunchto/slack-build-status/upload@v1
         if: success()
         with:
           token: ${{ secrets.SLACK_TOKEN }}
@@ -203,7 +203,7 @@ jobs:
     if: cancelled()
     runs-on: ubuntu-latest
     steps:
-      - uses: owner/slack-build-status/cancel-all@v1
+      - uses: holepunchto/slack-build-status/cancel-all@v1
         with:
           token: ${{ secrets.SLACK_TOKEN }}
           channel-id: C0123456789
