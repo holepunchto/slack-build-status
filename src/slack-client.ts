@@ -103,7 +103,7 @@ export class SlackClient {
     threadTs: string,
     filePath: string,
     filename?: string,
-  ): Promise<{ fileUrl: string; fileId: string }> {
+  ): Promise<{ fileUrl: string; fileId: string; _raw: unknown }> {
     const resolvedFilename = filename ?? path.basename(filePath);
     const fileContent = fs.readFileSync(filePath);
 
@@ -114,11 +114,15 @@ export class SlackClient {
       filename: resolvedFilename,
     });
 
+    // filesUploadV2 nests files as result.files[0].files[0]
     // biome-ignore lint/suspicious/noExplicitAny: Slack SDK types incomplete for filesUploadV2
-    const file = (result as any).file ?? (result as any).files?.[0];
+    const r = result as any;
+    const file = r.files?.[0]?.files?.[0] ?? r.file;
+
     return {
       fileUrl: file?.permalink ?? "",
       fileId: file?.id ?? "",
+      _raw: r,
     };
   }
 }

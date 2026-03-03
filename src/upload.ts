@@ -11,11 +11,11 @@ async function run(): Promise<void> {
 
     core.info(`Uploading "${filename ?? filePath}" to thread (ts: ${ts})`);
     const client = new SlackClient(token);
-    const { fileUrl, fileId } = await client.uploadFile(channelId, ts, filePath, filename);
+    const { fileUrl, fileId, _raw } = await client.uploadFile(channelId, ts, filePath, filename);
     if (fileUrl) {
       core.info(`File uploaded: ${fileUrl}`);
     } else {
-      core.warning("File uploaded but permalink not returned by Slack API");
+      core.warning(`File uploaded but permalink not returned: ${JSON.stringify(_raw, null, 2)}`);
     }
 
     core.setOutput("file-url", fileUrl);
