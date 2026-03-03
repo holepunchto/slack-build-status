@@ -23,7 +23,7 @@ inputs:
     description: URL to the git commit/branch (e.g. "https://github.com/owner/repo/tree/main")
     required: true
   changelog:
-    description: Changelog text (PR references like (#123) are auto-linked, e.g. "- feat: add login (#1)\n- fix: crash (#2)")
+    description: 'Changelog text (PR references like (#123) are auto-linked, e.g. "- feat: add login (#1)\n- fix: crash (#2)")'
     required: false
   changelog-compare-url:
     description: URL for the changelog compare link header (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")
