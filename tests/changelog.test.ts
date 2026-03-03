@@ -4,7 +4,20 @@ import { detectPrLinks, splitChunks } from "../src/changelog.js";
 describe("detectPrLinks", () => {
   it("replaces (#123) with a Slack mrkdwn link", () => {
     const result = detectPrLinks("fix: resolve crash (#123)", "org/repo");
-    expect(result).toBe("fix: resolve crash (<https://github.com/org/repo/pull/123|(#123)>)");
+    expect(result).toBe("fix: resolve crash <https://github.com/org/repo/pull/123|(#123)>");
+  });
+
+  it("replaces bare #123 with a Slack mrkdwn link", () => {
+    const result = detectPrLinks("fix: resolve crash #123", "org/repo");
+    expect(result).toBe("fix: resolve crash <https://github.com/org/repo/pull/123|#123>");
+  });
+
+  it("works with git log changelog format", () => {
+    const input = "• <https://github.com/org/repo/commit/91a4e0548|91a4e0548> - fix cancel (#6371)";
+    const result = detectPrLinks(input, "org/repo");
+    expect(result).toBe(
+      "• <https://github.com/org/repo/commit/91a4e0548|91a4e0548> - fix cancel <https://github.com/org/repo/pull/6371|(#6371)>",
+    );
   });
 
   it("replaces multiple PR references", () => {
