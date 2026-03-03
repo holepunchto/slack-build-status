@@ -9,6 +9,7 @@ vi.mock("@actions/core", () => ({
   setOutput: (...args: any[]) => mockSetOutput(...args),
   setFailed: (...args: any[]) => mockSetFailed(...args),
   info: vi.fn(),
+  warning: vi.fn(),
 }));
 
 vi.mock("@actions/github", () => ({
@@ -70,6 +71,7 @@ describe("create action", () => {
       setOutput: (...args: any[]) => mockSetOutput(...args),
       setFailed: (...args: any[]) => mockSetFailed(...args),
       info: vi.fn(),
+      warning: vi.fn(),
     }));
     vi.doMock("@actions/github", () => ({
       context: { repo: { owner: "default-org", repo: "default-repo" } },
