@@ -16,8 +16,9 @@ Post an initial build status message.
 | `version` | yes | `1.2.3` | Build version string |
 | `branch` | yes | `main` | Git branch name |
 | `git-url` | yes | `https://github.com/owner/repo/tree/main` | URL to the git commit/branch |
-| `changelog` | no | `- feat: add login (#1)\n- fix: crash (#2)` | Changelog text (`(#123)` references are auto-linked) |
-| `changelog-compare-url` | no | `https://github.com/owner/repo/compare/v1.0.0...v1.1.0` | URL for the changelog compare link header |
+| `changelog-from` | no | `v1.0.0` | Git ref to generate changelog from (auto-generates changelog and compare URL) |
+| `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Manual changelog text, overrides `changelog-from` (`#N` and `(#N)` are auto-linked) |
+| `changelog-compare-url` | no | `https://github.com/owner/repo/compare/v1.0.0...v1.1.0` | Manual compare URL, overrides auto-generated one |
 | `icon` | no | `:app-icon:` | Icon emoji to prepend to header |
 | `extra-badges` | no | `:badge-staging:` | Additional badge emojis for the header |
 | `thread-replies` | no | `[{"text":"Version check: OK"}]` | JSON array of thread replies |
@@ -71,32 +72,9 @@ Upload a file to the message thread.
 
 ## Changelog
 
-You don't need external changelog or markdown-conversion actions. A simple `git log` produces `- commit message (#123)` lines that work directly — the `create` action's built-in `detectPrLinks()` auto-links PR references like `(#123)` to GitHub, and Slack messages use plain text so no markdown-to-mrkdwn conversion is needed.
+Pass `changelog-from` with a git ref (e.g. a previous release tag) and the action generates the changelog automatically — no external actions needed. Each commit becomes a linked entry like `• 91a4e054 - fix: crash (#123)` with PR references auto-linked.
 
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-
-- name: Generate changelog
-  id: changelog
-  env:
-    PREV_TAG: ${{ steps.env-setup.outputs.PREV_RELEASE_TAG }}
-  run: |
-    if git rev-parse "$PREV_TAG" >/dev/null 2>&1; then
-      text=$(git log --pretty=format:'- %s' "$PREV_TAG"..HEAD)
-      compare_url="${{ github.server_url }}/${{ github.repository }}/compare/${PREV_TAG}...${{ github.sha }}"
-    else
-      text=$(git log --pretty=format:'- %s' -20)
-      compare_url=""
-    fi
-    {
-      echo 'text<<EOF'
-      echo "$text"
-      echo 'EOF'
-      echo "compare_url=$compare_url"
-    } >> "$GITHUB_OUTPUT"
-```
+You can also pass `changelog` directly to provide manual changelog text. PR references (`#123` and `(#123)`) are auto-linked in both cases.
 
 ## Workflow example
 
@@ -110,25 +88,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Generate changelog
-        id: changelog
-        env:
-          PREV_TAG: ${{ steps.env-setup.outputs.PREV_RELEASE_TAG }}
-        run: |
-          if git rev-parse "$PREV_TAG" >/dev/null 2>&1; then
-            text=$(git log --pretty=format:'- %s' "$PREV_TAG"..HEAD)
-            compare_url="${{ github.server_url }}/${{ github.repository }}/compare/${PREV_TAG}...${{ github.sha }}"
-          else
-            text=$(git log --pretty=format:'- %s' -20)
-            compare_url=""
-          fi
-          {
-            echo 'text<<EOF'
-            echo "$text"
-            echo 'EOF'
-            echo "compare_url=$compare_url"
-          } >> "$GITHUB_OUTPUT"
 
       - uses: holepunchto/slack-build-status/create@v1
         id: slack
@@ -145,8 +104,7 @@ jobs:
               {"name": "aab", "label": "AAB", "group": "Android"},
               {"name": "ios", "label": "Testflight", "group": "iOS"}
             ]
-          changelog: ${{ steps.changelog.outputs.text }}
-          changelog-compare-url: ${{ steps.changelog.outputs.compare_url }}
+          changelog-from: v1.0.0
           thread-replies: |
             [{"text": "Version check: ..."}]
           notify-users: '<@U0123> <@U0456>'

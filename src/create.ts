@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { buildMessage } from "./block-kit.js";
+import { generateChangelog } from "./changelog.js";
 import { SlackClient } from "./slack-client.js";
 import { type Build, Status } from "./types.js";
 
@@ -27,14 +28,31 @@ async function run(): Promise<void> {
     const version = core.getInput("version", { required: true });
     const branch = core.getInput("branch", { required: true });
     const gitUrl = core.getInput("git-url", { required: true });
-    const changelog = core.getInput("changelog") || undefined;
-    const changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
     const icon = core.getInput("icon") || undefined;
     const extraBadges = core.getInput("extra-badges") || undefined;
     const threadRepliesJson = core.getInput("thread-replies") || undefined;
     const notifyUsers = core.getInput("notify-users") || undefined;
     const repo =
       core.getInput("repo") || `${github.context.repo.owner}/${github.context.repo.repo}`;
+
+    const changelogFrom = core.getInput("changelog-from") || undefined;
+    let changelog = core.getInput("changelog") || undefined;
+    let changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
+
+    if (!changelog && changelogFrom) {
+      const generated = generateChangelog(changelogFrom, repo);
+      if (generated) {
+        changelog = generated.text;
+        changelogCompareUrl = changelogCompareUrl ?? generated.compareUrl;
+        core.info(
+          `Generated changelog from "${changelogFrom}" (${generated.text.split("\n").length} commits)`,
+        );
+      } else {
+        core.info(
+          `Could not generate changelog from "${changelogFrom}" — ref not found or no commits`,
+        );
+      }
+    }
 
     const builds = parseBuilds(buildsJson);
     core.info(

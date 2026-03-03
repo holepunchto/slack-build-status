@@ -1,5 +1,42 @@
+import { execFileSync } from "node:child_process";
+
 const MAX_CONTEXT_ELEMENTS = 10;
 const DEFAULT_MAX_CHARS = 2500;
+
+function git(...args: string[]): string {
+  return execFileSync("git", args, { encoding: "utf8" }).trim();
+}
+
+export function generateChangelog(
+  fromRef: string,
+  repo: string,
+): { text: string; compareUrl: string } | null {
+  try {
+    git("rev-parse", fromRef);
+  } catch {
+    return null;
+  }
+
+  const log = git("log", "--pretty=format:%H %s", `${fromRef}..HEAD`);
+  if (!log) return null;
+
+  const baseUrl = `https://github.com/${repo}`;
+  const text = log
+    .split("\n")
+    .map((line) => {
+      const spaceIdx = line.indexOf(" ");
+      const hash = line.slice(0, spaceIdx);
+      const message = line.slice(spaceIdx + 1);
+      const short = hash.slice(0, 9);
+      return `• <${baseUrl}/commit/${hash}|${short}> - ${message}`;
+    })
+    .join("\n");
+
+  const sha = git("rev-parse", "HEAD");
+  const compareUrl = `${baseUrl}/compare/${fromRef}...${sha}`;
+
+  return { text, compareUrl };
+}
 
 export function detectPrLinks(text: string, repo: string): string {
   let result = "";

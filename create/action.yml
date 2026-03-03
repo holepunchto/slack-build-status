@@ -22,11 +22,14 @@ inputs:
   git-url:
     description: URL to the git commit/branch (e.g. "https://github.com/owner/repo/tree/main")
     required: true
+  changelog-from:
+    description: Git ref to generate changelog from (e.g. "v1.0.0"). Auto-generates changelog and compare URL.
+    required: false
   changelog:
-    description: 'Changelog text (PR references like (#123) are auto-linked, e.g. "- feat: add login (#1)\n- fix: crash (#2)")'
+    description: 'Manual changelog text, overrides changelog-from (#N and (#N) references are auto-linked to GitHub PRs)'
     required: false
   changelog-compare-url:
-    description: URL for the changelog compare link header (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")
+    description: 'Manual compare URL, overrides auto-generated one (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")'
     required: false
   icon:
     description: Icon emoji/text to prepend to header (e.g. app icon)
