@@ -54,7 +54,9 @@ async function fetchAsanaLinksForPrs(
         results.set(pr, links);
       }
     } catch (err) {
-      core.warning(`Failed to fetch Asana links for PR #${pr}: ${err instanceof Error ? err.message : err}`);
+      core.warning(
+        `Failed to fetch Asana links for PR #${pr}: ${err instanceof Error ? err.message : err}`,
+      );
     }
   });
   await Promise.all(fetches);
@@ -92,7 +94,9 @@ export async function generateChangelog(
       .filter((n): n is number => n !== null);
     const unique = [...new Set(prNumbers)];
     if (unique.length > 0) {
-      core.info(`Found ${unique.length} unique PR reference(s): ${unique.map((n) => `#${n}`).join(", ")}`);
+      core.info(
+        `Found ${unique.length} unique PR reference(s): ${unique.map((n) => `#${n}`).join(", ")}`,
+      );
       asanaMap = await fetchAsanaLinksForPrs(octokit, owner, repoName, unique);
       core.info(`Asana links found for ${asanaMap.size} of ${unique.length} PR(s)`);
     } else {
