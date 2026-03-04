@@ -164,6 +164,25 @@ describe("buildMessage", () => {
     expect(payload.blocks.length).toBe(2); // header + statuses only
   });
 
+  it("renders without group prefix when group is omitted", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: [{ name: "lib", label: "org/repo", status: Status.Running }],
+        version: "1.0.0",
+        branch: "main",
+        gitUrl: "https://github.com/org/repo",
+      },
+      "org/repo",
+    );
+
+    const statusBlock = payload.blocks.find((b) => "block_id" in b && b.block_id === "statuses");
+    const fields = (statusBlock as any).fields;
+    expect(fields).toHaveLength(1);
+    expect(fields[0].text).toBe("org/repo :ga-running:");
+    expect(fields[0].text).not.toContain("\n");
+  });
+
   it("detects PR links in changelog", () => {
     const payload = buildMessage(
       "C123",
@@ -231,6 +250,20 @@ describe("updateBuildInBlocks", () => {
     const fields = (updated[1] as any).fields;
     expect(fields[0].text).toContain("https://keep.me");
     expect(fields[0].text).toContain(":ga-failed:");
+  });
+
+  it("updates status in fields without group prefix", () => {
+    const blocks = [
+      { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+      {
+        type: "section",
+        block_id: "statuses",
+        fields: [{ type: "mrkdwn", text: "org/repo :ga-running:" }],
+      },
+    ];
+    const updated = updateBuildInBlocks(blocks, "org/repo", Status.Success);
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe("org/repo :ga-success:");
   });
 
   it("returns unchanged blocks when build name not found", () => {

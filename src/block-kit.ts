@@ -158,9 +158,8 @@ export function updateBuildInBlocks(
 
   for (const field of fields) {
     const lines = field.text.split("\n");
-    if (lines.length < 2) continue;
-
-    const statusLine = lines.slice(1).join("\n");
+    const hasGroup = lines.length >= 2;
+    const statusLine = hasGroup ? lines.slice(1).join("\n") : lines[0];
     const parsed = parseStatusText(statusLine);
     const buildIndex = parsed.findIndex(
       (p) => p.name === buildName || p.name.toLowerCase() === buildName.toLowerCase(),
@@ -177,7 +176,7 @@ export function updateBuildInBlocks(
       })
       .join(" | ");
 
-    field.text = `${lines[0]}\n${rendered}`;
+    field.text = hasGroup ? `${lines[0]}\n${rendered}` : rendered;
     break;
   }
 
