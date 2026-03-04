@@ -46,6 +46,10 @@ inputs:
   repo:
     description: GitHub repo (owner/name) for PR link detection. Defaults to current repo. (e.g. "owner/repo")
     required: false
+  github-token:
+    description: 'GitHub token for fetching PR descriptions (e.g. "ghp_xxx"). Defaults to github.token.'
+    required: false
+    default: ${{ github.token }}
 
 outputs:
   ts:

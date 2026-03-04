@@ -1,5 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { detectPrLinks, splitChunks } from "../src/changelog.js";
+import {
+  detectPrLinks,
+  extractAsanaLinks,
+  extractPrNumber,
+  splitChunks,
+} from "../src/changelog.js";
+
+describe("extractPrNumber", () => {
+  it("extracts PR number from squash-merge message", () => {
+    expect(extractPrNumber("feat: add login (#123)")).toBe(123);
+  });
+
+  it("returns null when no PR reference", () => {
+    expect(extractPrNumber("chore: update deps")).toBeNull();
+  });
+
+  it("extracts first PR reference when multiple present", () => {
+    expect(extractPrNumber("feat: stuff (#10) and (#20)")).toBe(10);
+  });
+});
+
+describe("extractAsanaLinks", () => {
+  it("extracts multiple Asana links", () => {
+    const body =
+      "See https://app.asana.com/0/123/456 and https://app.asana.com/0/789/012 for details";
+    expect(extractAsanaLinks(body)).toEqual([
+      "https://app.asana.com/0/123/456",
+      "https://app.asana.com/0/789/012",
+    ]);
+  });
+
+  it("returns empty array when no Asana links", () => {
+    expect(extractAsanaLinks("just a normal PR body")).toEqual([]);
+  });
+
+  it("deduplicates identical links", () => {
+    const body = "https://app.asana.com/0/123/456 and again https://app.asana.com/0/123/456";
+    expect(extractAsanaLinks(body)).toEqual(["https://app.asana.com/0/123/456"]);
+  });
+});
 
 describe("detectPrLinks", () => {
   it("replaces (#123) with a Slack mrkdwn link", () => {

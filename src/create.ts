@@ -35,12 +35,15 @@ async function run(): Promise<void> {
     const repo =
       core.getInput("repo") || `${github.context.repo.owner}/${github.context.repo.repo}`;
 
+    const githubToken = core.getInput("github-token") || undefined;
+    const octokit = githubToken ? github.getOctokit(githubToken) : undefined;
+
     const changelogFrom = core.getInput("changelog-from") || undefined;
     let changelog = core.getInput("changelog") || undefined;
     let changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
 
     if (!changelog && changelogFrom) {
-      const generated = generateChangelog(changelogFrom, repo);
+      const generated = await generateChangelog(changelogFrom, repo, octokit);
       if (generated) {
         changelog = generated.text;
         changelogCompareUrl = changelogCompareUrl ?? generated.compareUrl;

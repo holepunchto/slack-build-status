@@ -1,16 +1,67 @@
 import { execFileSync } from "node:child_process";
+import type { GitHub } from "@actions/github/lib/utils.js";
 
 const MAX_CONTEXT_ELEMENTS = 10;
 const DEFAULT_MAX_CHARS = 2500;
+
+type Octokit = InstanceType<typeof GitHub>;
 
 function git(...args: string[]): string {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
-export function generateChangelog(
+export function extractPrNumber(message: string): number | null {
+  const start = message.indexOf("(#");
+  if (start === -1) return null;
+  let end = start + 2;
+  while (end < message.length && message[end] >= "0" && message[end] <= "9") end++;
+  if (end === start + 2 || message[end] !== ")") return null;
+  return Number(message.slice(start + 2, end));
+}
+
+const ASANA_PREFIX = "https://app.asana.com/";
+const LINK_TERMINATORS = new Set([" ", "\t", "\n", "\r", ")", ">", "]"]);
+
+export function extractAsanaLinks(body: string): string[] {
+  const links: string[] = [];
+  let i = 0;
+  while (i < body.length) {
+    const idx = body.indexOf(ASANA_PREFIX, i);
+    if (idx === -1) break;
+    let end = idx + ASANA_PREFIX.length;
+    while (end < body.length && !LINK_TERMINATORS.has(body[end])) end++;
+    const link = body.slice(idx, end);
+    if (!links.includes(link)) links.push(link);
+    i = end;
+  }
+  return links;
+}
+
+async function fetchAsanaLinksForPrs(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  prNumbers: number[],
+): Promise<Map<number, string[]>> {
+  const results = new Map<number, string[]>();
+  const fetches = prNumbers.map(async (pr) => {
+    try {
+      const { data } = await octokit.rest.pulls.get({ owner, repo, pull_number: pr });
+      const links = extractAsanaLinks(data.body ?? "");
+      if (links.length > 0) results.set(pr, links);
+    } catch {
+      // silently skip failures
+    }
+  });
+  await Promise.all(fetches);
+  return results;
+}
+
+export async function generateChangelog(
   fromRef: string,
   repo: string,
-): { text: string; compareUrl: string } | null {
+  octokit?: Octokit,
+): Promise<{ text: string; compareUrl: string } | null> {
   try {
     git("rev-parse", fromRef);
   } catch {
@@ -21,14 +72,33 @@ export function generateChangelog(
   if (!log) return null;
 
   const baseUrl = `https://github.com/${repo}`;
-  const text = log
-    .split("\n")
-    .map((line) => {
-      const spaceIdx = line.indexOf(" ");
-      const hash = line.slice(0, spaceIdx);
-      const message = line.slice(spaceIdx + 1);
-      const short = hash.slice(0, 9);
-      return `• <${baseUrl}/commit/${hash}|${short}> - ${message}`;
+  const lines = log.split("\n").map((line) => {
+    const spaceIdx = line.indexOf(" ");
+    const hash = line.slice(0, spaceIdx);
+    const message = line.slice(spaceIdx + 1);
+    const short = hash.slice(0, 9);
+    return { hash, message, formatted: `• <${baseUrl}/commit/${hash}|${short}> - ${message}` };
+  });
+
+  let asanaMap = new Map<number, string[]>();
+  if (octokit) {
+    const [owner, repoName] = repo.split("/");
+    const prNumbers = lines
+      .map((l) => extractPrNumber(l.message))
+      .filter((n): n is number => n !== null);
+    const unique = [...new Set(prNumbers)];
+    if (unique.length > 0) {
+      asanaMap = await fetchAsanaLinksForPrs(octokit, owner, repoName, unique);
+    }
+  }
+
+  const text = lines
+    .map((l) => {
+      const pr = extractPrNumber(l.message);
+      const links = pr ? asanaMap.get(pr) : undefined;
+      if (!links?.length) return l.formatted;
+      const asanaSuffix = links.map((url) => `<${url}|:asana:>`).join(" ");
+      return `${l.formatted} ${asanaSuffix}`;
     })
     .join("\n");
 
