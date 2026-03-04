@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import * as core from "@actions/core";
 import type { GitHub } from "@actions/github/lib/utils.js";
 
 const MAX_CONTEXT_ELEMENTS = 10;
@@ -48,9 +49,12 @@ async function fetchAsanaLinksForPrs(
     try {
       const { data } = await octokit.rest.pulls.get({ owner, repo, pull_number: pr });
       const links = extractAsanaLinks(data.body ?? "");
-      if (links.length > 0) results.set(pr, links);
-    } catch {
-      // silently skip failures
+      if (links.length > 0) {
+        core.info(`Found ${links.length} Asana link(s) in PR #${pr}`);
+        results.set(pr, links);
+      }
+    } catch (err) {
+      core.warning(`Failed to fetch Asana links for PR #${pr}: ${err instanceof Error ? err.message : err}`);
     }
   });
   await Promise.all(fetches);
@@ -88,7 +92,11 @@ export async function generateChangelog(
       .filter((n): n is number => n !== null);
     const unique = [...new Set(prNumbers)];
     if (unique.length > 0) {
+      core.info(`Found ${unique.length} unique PR reference(s): ${unique.map((n) => `#${n}`).join(", ")}`);
       asanaMap = await fetchAsanaLinksForPrs(octokit, owner, repoName, unique);
+      core.info(`Asana links found for ${asanaMap.size} of ${unique.length} PR(s)`);
+    } else {
+      core.info("No PR references found in changelog commits");
     }
   }
 
