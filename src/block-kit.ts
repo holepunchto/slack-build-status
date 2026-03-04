@@ -65,9 +65,10 @@ export function buildMessage(
 
   const groups = new Map<string, Build[]>();
   for (const build of builds) {
-    const existing = groups.get(build.group) ?? [];
+    const key = build.group ?? "";
+    const existing = groups.get(key) ?? [];
     existing.push(build);
-    groups.set(build.group, existing);
+    groups.set(key, existing);
   }
 
   const badges = [icon, extraBadges].filter(Boolean).join(" ");
@@ -86,9 +87,10 @@ export function buildMessage(
 
   const fields: { type: "mrkdwn"; text: string }[] = [];
   for (const [groupName, groupBuilds] of groups) {
+    const statusText = buildStatusText(groupBuilds);
     fields.push({
       type: "mrkdwn",
-      text: `${groupName}:\n${buildStatusText(groupBuilds)}`,
+      text: groupName ? `${groupName}:\n${statusText}` : statusText,
     });
   }
 

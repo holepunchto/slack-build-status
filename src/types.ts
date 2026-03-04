@@ -21,7 +21,7 @@ export const STATUS_EMOJI: Record<Status, string> = {
 export interface Build {
   name: string;
   label: string;
-  group: string;
+  group?: string;
   status: Status;
   link?: string;
 }
