@@ -9,12 +9,11 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+        contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +25,9 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Lint
+        run: npx biome lint .
 
       - name: Format
         run: npx biome format --write .
@@ -39,5 +41,3 @@ jobs:
           git diff --cached --quiet || git commit -m "style: format with biome"
           git push || true
 
-      - name: Lint
-        run: npx biome lint .
