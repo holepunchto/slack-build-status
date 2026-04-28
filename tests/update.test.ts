@@ -101,6 +101,115 @@ describe("update action", () => {
     expect(androidField).toContain("SV :ga-running:");
   });
 
+  it("scopes the update to a specific group when group input is set", async () => {
+    setupInputs({
+      "build-name": "AAB",
+      status: "success",
+      group: "Android :production-bird:",
+    });
+
+    mockGetMessage.mockResolvedValue({
+      channel: "C123456",
+      ts: "1234567890.123456",
+      blocks: [
+        { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+        {
+          type: "section",
+          block_id: "statuses",
+          fields: [
+            { type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" },
+            { type: "mrkdwn", text: "Android :production-bird::\nAAB :ga-running:" },
+          ],
+        },
+      ],
+    });
+
+    vi.resetModules();
+    vi.doMock("@actions/core", () => ({
+      getInput: (...args: any[]) => mockGetInput(...args),
+      setOutput: (...args: any[]) => mockSetOutput(...args),
+      setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
+      warning: vi.fn(),
+    }));
+    vi.doMock("../src/slack-client.js", () => ({
+      SlackClient: vi.fn().mockImplementation(() => ({
+        getMessage: mockGetMessage,
+        updateMessage: mockUpdateMessage,
+      })),
+    }));
+
+    await import("../src/update.js");
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockUpdateMessage).toHaveBeenCalledTimes(1);
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    const fields = (blocks[1] as any).fields;
+    expect(fields[0].text).toBe("Android :internal-bird::\nAAB :ga-running:");
+    expect(fields[1].text).toBe("Android :production-bird::\nAAB :ga-success:");
+  });
+
+  it("uses per-entry group on also-update entries, falling back to top-level group", async () => {
+    setupInputs({
+      "build-name": "AAB",
+      status: "success",
+      group: "Android :production-bird:",
+      "also-update": JSON.stringify([
+        { name: "APK", status: "running" },
+        { name: "AAB", status: "running", group: "Android :internal-bird:" },
+      ]),
+    });
+
+    mockGetMessage.mockResolvedValue({
+      channel: "C123456",
+      ts: "1234567890.123456",
+      blocks: [
+        { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+        {
+          type: "section",
+          block_id: "statuses",
+          fields: [
+            {
+              type: "mrkdwn",
+              text: "Android :internal-bird::\nAAB :ga-pending: | APK :ga-pending:",
+            },
+            {
+              type: "mrkdwn",
+              text: "Android :production-bird::\nAAB :ga-running: | APK :ga-pending:",
+            },
+          ],
+        },
+      ],
+    });
+
+    vi.resetModules();
+    vi.doMock("@actions/core", () => ({
+      getInput: (...args: any[]) => mockGetInput(...args),
+      setOutput: (...args: any[]) => mockSetOutput(...args),
+      setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
+      warning: vi.fn(),
+    }));
+    vi.doMock("../src/slack-client.js", () => ({
+      SlackClient: vi.fn().mockImplementation(() => ({
+        getMessage: mockGetMessage,
+        updateMessage: mockUpdateMessage,
+      })),
+    }));
+
+    await import("../src/update.js");
+    await new Promise((r) => setTimeout(r, 50));
+
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    const fields = (blocks[1] as any).fields;
+    expect(fields[0].text).toBe(
+      "Android :internal-bird::\nAAB :ga-running: | APK :ga-pending:",
+    );
+    expect(fields[1].text).toBe(
+      "Android :production-bird::\nAAB :ga-success: | APK :ga-running:",
+    );
+  });
+
   it("calls setFailed on error", async () => {
     mockGetMessage.mockRejectedValue(new Error("network error"));
     setupInputs();

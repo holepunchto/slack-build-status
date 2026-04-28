@@ -7,6 +7,7 @@ interface AlsoUpdate {
   name: string;
   status: string;
   link?: string;
+  group?: string;
 }
 
 async function run(): Promise<void> {
@@ -19,8 +20,7 @@ async function run(): Promise<void> {
     let link = core.getInput("link") || undefined;
     const filePath = core.getInput("file-path") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
-
-    core.info(`Updating build "${buildName}" to "${statusInput}" (ts: ${ts})`);
+    const topLevelGroup = core.getInput("group") || undefined;
 
     const client = new SlackClient(token);
 
@@ -39,14 +39,19 @@ async function run(): Promise<void> {
     core.info(`Fetched message with ${message.blocks.length} blocks`);
 
     const status = mapJobStatus(statusInput);
-    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link);
+    const groupSuffix = topLevelGroup ? ` in group "${topLevelGroup}"` : "";
+    core.info(`Updating build "${buildName}" to "${statusInput}"${groupSuffix} (ts: ${ts})`);
+
+    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link, topLevelGroup);
 
     if (alsoUpdateJson) {
       const alsoUpdates: AlsoUpdate[] = JSON.parse(alsoUpdateJson);
       for (const update of alsoUpdates) {
-        core.info(`Also updating "${update.name}" to "${update.status}"`);
+        const updateGroup = update.group ?? topLevelGroup;
+        const entrySuffix = updateGroup ? ` in group "${updateGroup}"` : "";
+        core.info(`Also updating "${update.name}" to "${update.status}"${entrySuffix}`);
         const updateStatus = mapJobStatus(update.status);
-        blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link);
+        blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link, updateGroup);
       }
     }
 
