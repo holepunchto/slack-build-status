@@ -310,9 +310,7 @@ describe("updateBuildInBlocks", () => {
       {
         type: "section",
         block_id: "statuses",
-        fields: [
-          { type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" },
-        ],
+        fields: [{ type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" }],
       },
     ];
 

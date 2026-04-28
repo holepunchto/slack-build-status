@@ -202,12 +202,8 @@ describe("update action", () => {
 
     const [, , blocks] = mockUpdateMessage.mock.calls[0];
     const fields = (blocks[1] as any).fields;
-    expect(fields[0].text).toBe(
-      "Android :internal-bird::\nAAB :ga-running: | APK :ga-pending:",
-    );
-    expect(fields[1].text).toBe(
-      "Android :production-bird::\nAAB :ga-success: | APK :ga-running:",
-    );
+    expect(fields[0].text).toBe("Android :internal-bird::\nAAB :ga-running: | APK :ga-pending:");
+    expect(fields[1].text).toBe("Android :production-bird::\nAAB :ga-success: | APK :ga-running:");
   });
 
   it("logs a warning when group is provided but no matching field exists", async () => {
@@ -227,9 +223,7 @@ describe("update action", () => {
         {
           type: "section",
           block_id: "statuses",
-          fields: [
-            { type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" },
-          ],
+          fields: [{ type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" }],
         },
       ],
     });

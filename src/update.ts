@@ -1,4 +1,5 @@
 import * as core from "@actions/core";
+import type { Block, KnownBlock } from "@slack/web-api";
 import { updateBuildInBlocks } from "./block-kit.js";
 import { SlackClient } from "./slack-client.js";
 import { mapJobStatus } from "./types.js";
@@ -10,11 +11,11 @@ interface AlsoUpdate {
   group?: string;
 }
 
-function hasGroupHeading(blocks: any[], group: string): boolean {
+function hasGroupHeading(blocks: (KnownBlock | Block)[], group: string): boolean {
   for (const block of blocks) {
     if (block.type !== "section" || !("fields" in block) || !block.fields) continue;
     for (const field of block.fields) {
-      const firstLine = (field.text as string).split("\n")[0];
+      const firstLine = field.text.split("\n")[0];
       if (firstLine === `${group}:`) return true;
     }
   }
