@@ -20,6 +20,14 @@ inputs:
   link:
     description: URL to attach to this build (e.g. artifact download link)
     required: false
+  group:
+    description: >
+      Restrict the search to a specific group heading (e.g. "Android :internal-bird:").
+      When set, the matcher only looks at the field whose first line equals
+      "<group>:". Required when multiple groups in the same message contain
+      identically-labeled builds (e.g. matrix runs that produce "AAB" in two
+      flavor groups).
+    required: false
   file-path:
     description: File to upload to the thread and link to this build (e.g. "build/outputs/app.apk")
     required: false

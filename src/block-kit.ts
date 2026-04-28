@@ -151,6 +151,7 @@ export function updateBuildInBlocks(
   buildName: string,
   newStatus: Status,
   link?: string,
+  group?: string,
 ): (KnownBlock | Block)[] {
   const result = structuredClone(blocks);
   const fields = findStatusFields(result);
@@ -159,6 +160,12 @@ export function updateBuildInBlocks(
   for (const field of fields) {
     const lines = field.text.split("\n");
     const hasGroup = lines.length >= 2;
+
+    if (group !== undefined) {
+      const headingLine = hasGroup ? lines[0] : "";
+      if (headingLine !== `${group}:`) continue;
+    }
+
     const statusLine = hasGroup ? lines.slice(1).join("\n") : lines[0];
     const parsed = parseStatusText(statusLine);
     const buildIndex = parsed.findIndex(

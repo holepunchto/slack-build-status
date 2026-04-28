@@ -1,4 +1,5 @@
 import * as core from "@actions/core";
+import type { Block, KnownBlock } from "@slack/web-api";
 import { updateBuildInBlocks } from "./block-kit.js";
 import { SlackClient } from "./slack-client.js";
 import { mapJobStatus } from "./types.js";
@@ -7,6 +8,18 @@ interface AlsoUpdate {
   name: string;
   status: string;
   link?: string;
+  group?: string;
+}
+
+function hasGroupHeading(blocks: (KnownBlock | Block)[], group: string): boolean {
+  for (const block of blocks) {
+    if (block.type !== "section" || !("fields" in block) || !block.fields) continue;
+    for (const field of block.fields) {
+      const firstLine = field.text.split("\n")[0];
+      if (firstLine === `${group}:`) return true;
+    }
+  }
+  return false;
 }
 
 async function run(): Promise<void> {
@@ -19,8 +32,7 @@ async function run(): Promise<void> {
     let link = core.getInput("link") || undefined;
     const filePath = core.getInput("file-path") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
-
-    core.info(`Updating build "${buildName}" to "${statusInput}" (ts: ${ts})`);
+    const topLevelGroup = core.getInput("group") || undefined;
 
     const client = new SlackClient(token);
 
@@ -39,14 +51,29 @@ async function run(): Promise<void> {
     core.info(`Fetched message with ${message.blocks.length} blocks`);
 
     const status = mapJobStatus(statusInput);
-    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link);
+    const groupSuffix = topLevelGroup ? ` in group "${topLevelGroup}"` : "";
+    core.info(`Updating build "${buildName}" to "${statusInput}"${groupSuffix} (ts: ${ts})`);
+
+    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link, topLevelGroup);
+    if (topLevelGroup && !hasGroupHeading(message.blocks, topLevelGroup)) {
+      core.warning(
+        `Group '${topLevelGroup}' not found in message; update for "${buildName}" skipped`,
+      );
+    }
 
     if (alsoUpdateJson) {
       const alsoUpdates: AlsoUpdate[] = JSON.parse(alsoUpdateJson);
       for (const update of alsoUpdates) {
-        core.info(`Also updating "${update.name}" to "${update.status}"`);
+        const updateGroup = update.group ?? topLevelGroup;
+        const entrySuffix = updateGroup ? ` in group "${updateGroup}"` : "";
+        core.info(`Also updating "${update.name}" to "${update.status}"${entrySuffix}`);
         const updateStatus = mapJobStatus(update.status);
-        blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link);
+        blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link, updateGroup);
+        if (updateGroup && !hasGroupHeading(message.blocks, updateGroup)) {
+          core.warning(
+            `Group '${updateGroup}' not found in message; update for "${update.name}" skipped`,
+          );
+        }
       }
     }
 

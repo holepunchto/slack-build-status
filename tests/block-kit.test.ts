@@ -271,6 +271,79 @@ describe("updateBuildInBlocks", () => {
     const updated = updateBuildInBlocks(blocks, "nonexistent", Status.Success);
     expect(updated).toEqual(blocks);
   });
+
+  it("scopes the matcher to a specific group when group is provided", () => {
+    const blocks = [
+      { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+      {
+        type: "section",
+        block_id: "statuses",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: "Android :internal-bird::\nAAB :ga-running:",
+          },
+          {
+            type: "mrkdwn",
+            text: "Android :production-bird::\nAAB :ga-running:",
+          },
+        ],
+      },
+    ];
+
+    const updated = updateBuildInBlocks(
+      blocks,
+      "AAB",
+      Status.Success,
+      undefined,
+      "Android :production-bird:",
+    );
+
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe("Android :internal-bird::\nAAB :ga-running:");
+    expect(fields[1].text).toBe("Android :production-bird::\nAAB :ga-success:");
+  });
+
+  it("returns unchanged blocks when group is provided but no field matches", () => {
+    const blocks = [
+      { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+      {
+        type: "section",
+        block_id: "statuses",
+        fields: [{ type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" }],
+      },
+    ];
+
+    const updated = updateBuildInBlocks(
+      blocks,
+      "AAB",
+      Status.Success,
+      undefined,
+      "iOS :nightly-bird:",
+    );
+
+    expect(updated).toEqual(blocks);
+  });
+
+  it("preserves the first-match behavior when group is omitted (back-compat)", () => {
+    const blocks = [
+      { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+      {
+        type: "section",
+        block_id: "statuses",
+        fields: [
+          { type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" },
+          { type: "mrkdwn", text: "Android :production-bird::\nAAB :ga-running:" },
+        ],
+      },
+    ];
+
+    const updated = updateBuildInBlocks(blocks, "AAB", Status.Success);
+
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe("Android :internal-bird::\nAAB :ga-success:");
+    expect(fields[1].text).toBe("Android :production-bird::\nAAB :ga-running:");
+  });
 });
 
 describe("cancelAllInBlocks", () => {
