@@ -13,6 +13,10 @@ describe("mapJobStatus", () => {
     expect(mapJobStatus("shipped")).toBe(Status.Shipped);
   });
 
+  it("maps queued - distinct from pending; used for builds awaiting a runner", () => {
+    expect(mapJobStatus("queued")).toBe(Status.Queued);
+  });
+
   it("is case-insensitive", () => {
     expect(mapJobStatus("Success")).toBe(Status.Success);
     expect(mapJobStatus("FAILURE")).toBe(Status.Failure);
@@ -35,5 +39,10 @@ describe("STATUS_EMOJI", () => {
 
   it("uses :rocket: for the Shipped status", () => {
     expect(STATUS_EMOJI[Status.Shipped]).toBe(":rocket:");
+  });
+
+  it("uses :ga-queued: for the Queued status - distinct from :ga-pending:", () => {
+    expect(STATUS_EMOJI[Status.Queued]).toBe(":ga-queued:");
+    expect(STATUS_EMOJI[Status.Queued]).not.toBe(STATUS_EMOJI[Status.Pending]);
   });
 });
