@@ -1,6 +1,7 @@
 import type { Block, KnownBlock } from "@slack/web-api";
 
 export enum Status {
+  Queued = "queued",
   Pending = "pending",
   Running = "running",
   Success = "success",
@@ -11,6 +12,7 @@ export enum Status {
 }
 
 export const STATUS_EMOJI: Record<Status, string> = {
+  [Status.Queued]: ":ga-queued:",
   [Status.Pending]: ":ga-pending:",
   [Status.Running]: ":ga-running:",
   [Status.Success]: ":ga-success:",
@@ -47,7 +49,9 @@ export interface CreateMessageParams {
 
 /** GitHub provides: "success", "failure", "cancelled". "shipped" is a custom
  * value emitted by callers after a successful remote upload (e.g. Firebase
- * App Distribution, TestFlight). */
+ * App Distribution, TestFlight). "queued" represents a build that hasn't
+ * started yet (waiting for a runner) - distinct from "pending", which is
+ * used for builds that are downstream of a currently-running build. */
 export function mapJobStatus(jobStatus: string): Status {
   switch (jobStatus.toLowerCase()) {
     case "success":
@@ -64,6 +68,8 @@ export function mapJobStatus(jobStatus: string): Status {
       return Status.Running;
     case "pending":
       return Status.Pending;
+    case "queued":
+      return Status.Queued;
     default:
       return Status.Failure;
   }
