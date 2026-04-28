@@ -210,6 +210,53 @@ describe("update action", () => {
     );
   });
 
+  it("logs a warning when group is provided but no matching field exists", async () => {
+    const mockWarning = vi.fn();
+
+    setupInputs({
+      "build-name": "AAB",
+      status: "success",
+      group: "iOS :nightly-bird:",
+    });
+
+    mockGetMessage.mockResolvedValue({
+      channel: "C123456",
+      ts: "1234567890.123456",
+      blocks: [
+        { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+        {
+          type: "section",
+          block_id: "statuses",
+          fields: [
+            { type: "mrkdwn", text: "Android :internal-bird::\nAAB :ga-running:" },
+          ],
+        },
+      ],
+    });
+
+    vi.resetModules();
+    vi.doMock("@actions/core", () => ({
+      getInput: (...args: any[]) => mockGetInput(...args),
+      setOutput: (...args: any[]) => mockSetOutput(...args),
+      setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
+      warning: mockWarning,
+    }));
+    vi.doMock("../src/slack-client.js", () => ({
+      SlackClient: vi.fn().mockImplementation(() => ({
+        getMessage: mockGetMessage,
+        updateMessage: mockUpdateMessage,
+      })),
+    }));
+
+    await import("../src/update.js");
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockWarning).toHaveBeenCalledWith(
+      "Group 'iOS :nightly-bird:' not found in message; update for \"AAB\" skipped",
+    );
+  });
+
   it("calls setFailed on error", async () => {
     mockGetMessage.mockRejectedValue(new Error("network error"));
     setupInputs();
