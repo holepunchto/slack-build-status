@@ -4,6 +4,7 @@ export enum Status {
   Pending = "pending",
   Running = "running",
   Success = "success",
+  Shipped = "shipped",
   Failure = "failure",
   Cancelled = "cancelled",
   Skipped = "skipped",
@@ -13,6 +14,7 @@ export const STATUS_EMOJI: Record<Status, string> = {
   [Status.Pending]: ":ga-pending:",
   [Status.Running]: ":ga-running:",
   [Status.Success]: ":ga-success:",
+  [Status.Shipped]: ":rocket:",
   [Status.Failure]: ":ga-failed:",
   [Status.Cancelled]: ":ga-cancelled:",
   [Status.Skipped]: ":ga-skipped:",
@@ -43,11 +45,15 @@ export interface CreateMessageParams {
   extraBadges?: string;
 }
 
-/** GitHub provides: "success", "failure", "cancelled" */
+/** GitHub provides: "success", "failure", "cancelled". "shipped" is a custom
+ * value emitted by callers after a successful remote upload (e.g. Firebase
+ * App Distribution, TestFlight). */
 export function mapJobStatus(jobStatus: string): Status {
   switch (jobStatus.toLowerCase()) {
     case "success":
       return Status.Success;
+    case "shipped":
+      return Status.Shipped;
     case "failure":
       return Status.Failure;
     case "cancelled":
