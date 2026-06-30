@@ -31,6 +31,10 @@ inputs:
   changelog-compare-url:
     description: 'Manual compare URL, overrides auto-generated one (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")'
     required: false
+  changelog-in-thread:
+    description: 'Post the changelog as a thread reply instead of in the message body (e.g. "true")'
+    required: false
+    default: 'false'
   icon:
     description: Icon emoji/text to prepend to header (e.g. app icon)
     required: false

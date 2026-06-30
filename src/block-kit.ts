@@ -55,6 +55,29 @@ export interface SlackPayload {
   blocks: (KnownBlock | Block)[];
 }
 
+export function buildChangelogBlock(
+  changelog: string,
+  changelogCompareUrl: string | undefined,
+  repo: string,
+): KnownBlock | null {
+  const processed = detectPrLinks(changelog, repo);
+  const chunks = splitChunks(processed);
+
+  const elements: { type: "mrkdwn"; text: string }[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const prefix = i === 0 && changelogCompareUrl ? `*<${changelogCompareUrl}|Changelog:>*\n` : "";
+    elements.push({ type: "mrkdwn", text: prefix + chunks[i] });
+  }
+
+  if (elements.length === 0) return null;
+
+  return {
+    type: "context",
+    block_id: "changelog",
+    elements,
+  } as KnownBlock;
+}
+
 export function buildMessage(
   channelId: string,
   params: CreateMessageParams,
@@ -101,23 +124,8 @@ export function buildMessage(
   } as KnownBlock);
 
   if (changelog) {
-    const processed = detectPrLinks(changelog, repo);
-    const chunks = splitChunks(processed);
-
-    const elements: { type: "mrkdwn"; text: string }[] = [];
-    for (let i = 0; i < chunks.length; i++) {
-      const prefix =
-        i === 0 && changelogCompareUrl ? `*<${changelogCompareUrl}|Changelog:>*\n` : "";
-      elements.push({ type: "mrkdwn", text: prefix + chunks[i] });
-    }
-
-    if (elements.length > 0) {
-      blocks.push({
-        type: "context",
-        block_id: "changelog",
-        elements,
-      } as KnownBlock);
-    }
+    const changelogBlock = buildChangelogBlock(changelog, changelogCompareUrl, repo);
+    if (changelogBlock) blocks.push(changelogBlock);
   }
 
   return {

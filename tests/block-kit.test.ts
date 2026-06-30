@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildChangelogBlock,
   buildMessage,
   buildStatusText,
   cancelAllInBlocks,
@@ -373,5 +374,27 @@ describe("cancelAllInBlocks", () => {
     const blocks = structuredClone(sampleMessage.blocks);
     cancelAllInBlocks(blocks);
     expect((blocks[1] as any).fields[0].text).toContain(":ga-running:");
+  });
+});
+
+describe("buildChangelogBlock", () => {
+  it("returns a context block with the compare-url header and PR links", () => {
+    const block = buildChangelogBlock(
+      "fix bug (#42)",
+      "https://github.com/org/repo/compare/v1.0.0...main",
+      "org/repo",
+    ) as any;
+
+    expect(block).not.toBeNull();
+    expect(block.type).toBe("context");
+    expect(block.block_id).toBe("changelog");
+    expect(block.elements[0].text).toContain(
+      "*<https://github.com/org/repo/compare/v1.0.0...main|Changelog:>*",
+    );
+    expect(block.elements[0].text).toContain("/pull/42|(#42)>");
+  });
+
+  it("returns null when changelog is empty", () => {
+    expect(buildChangelogBlock("", undefined, "org/repo")).toBeNull();
   });
 });
