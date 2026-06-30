@@ -19,6 +19,7 @@ Post an initial build status message.
 | `changelog-from` | no | `v1.0.0` | Git ref to generate changelog from (auto-generates changelog and compare URL) |
 | `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Manual changelog text, overrides `changelog-from` (`#N` and `(#N)` are auto-linked) |
 | `changelog-compare-url` | no | `https://github.com/owner/repo/compare/v1.0.0...v1.1.0` | Manual compare URL, overrides auto-generated one |
+| `changelog-in-thread` | no | `true` | Post the changelog as a thread reply instead of the message body |
 | `icon` | no | `:app-icon:` | Icon emoji to prepend to header |
 | `extra-badges` | no | `:badge-staging:` | Additional badge emojis for the header |
 | `thread-replies` | no | `[{"text":"Version check: OK"}]` | JSON array of thread replies |
@@ -76,6 +77,8 @@ Upload a file to the message thread.
 Pass `changelog-from` with a git ref (e.g. a previous release tag) and the action generates the changelog automatically — no external actions needed. Each commit becomes a linked entry like `• 91a4e054 - fix: crash (#123)` with PR references auto-linked.
 
 You can also pass `changelog` directly to provide manual changelog text. PR references (`#123` and `(#123)`) are auto-linked in both cases.
+
+By default the changelog renders in the message body. Set `changelog-in-thread: true` to post it as a thread reply instead, keeping the main message compact — the format is unchanged.
 
 ## Workflow example
 

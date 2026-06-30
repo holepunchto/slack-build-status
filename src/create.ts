@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
-import { buildMessage } from "./block-kit.js";
+import { buildChangelogBlock, buildMessage } from "./block-kit.js";
 import { generateChangelog } from "./changelog.js";
 import { SlackClient } from "./slack-client.js";
 import { type Build, Status } from "./types.js";
@@ -41,6 +41,7 @@ async function run(): Promise<void> {
     const changelogFrom = core.getInput("changelog-from") || undefined;
     let changelog = core.getInput("changelog") || undefined;
     let changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
+    const changelogInThread = core.getInput("changelog-in-thread") === "true";
 
     if (!changelog && changelogFrom) {
       const generated = await generateChangelog(changelogFrom, repo, octokit);
@@ -69,8 +70,8 @@ async function run(): Promise<void> {
         version,
         branch,
         gitUrl,
-        changelog,
-        changelogCompareUrl,
+        changelog: changelogInThread ? undefined : changelog,
+        changelogCompareUrl: changelogInThread ? undefined : changelogCompareUrl,
         icon,
         extraBadges,
       },
@@ -85,6 +86,13 @@ async function run(): Promise<void> {
 
     core.info(`Message posted (ts: ${ts})`);
     core.setOutput("ts", ts);
+
+    if (changelogInThread && changelog) {
+      const changelogBlock = buildChangelogBlock(changelog, changelogCompareUrl, repo);
+      if (changelogBlock) {
+        await client.postThreadReply(channelId, ts, "Changelog", [changelogBlock]);
+      }
+    }
 
     if (threadRepliesJson) {
       const replies: { text: string }[] = JSON.parse(threadRepliesJson);
