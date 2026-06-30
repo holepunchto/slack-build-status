@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SlackApiError, SlackClient } from "../src/slack-client.js";
+import type { KnownBlock } from "@slack/web-api";
 
 const mockPostMessage = vi.fn();
 const mockUpdate = vi.fn();
@@ -126,6 +127,33 @@ describe("SlackClient", () => {
           text: "reply text",
         }),
       );
+    });
+
+    it("includes blocks when provided", async () => {
+      mockPostMessage.mockResolvedValue({ ok: true, ts: "123.789" });
+
+      const blocks: KnownBlock[] = [
+        { type: "context", block_id: "changelog", elements: [{ type: "mrkdwn", text: "changelog" }] },
+      ];
+      await client.postThreadReply("C123", "123.456", "Changelog", blocks);
+
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channel: "C123",
+          thread_ts: "123.456",
+          text: "Changelog",
+          blocks,
+        }),
+      );
+    });
+
+    it("omits blocks when not provided", async () => {
+      mockPostMessage.mockResolvedValue({ ok: true, ts: "123.789" });
+
+      await client.postThreadReply("C123", "123.456", "plain");
+
+      const call = mockPostMessage.mock.calls[0][0];
+      expect(call).not.toHaveProperty("blocks");
     });
   });
 });

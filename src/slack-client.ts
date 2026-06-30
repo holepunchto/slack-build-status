@@ -43,11 +43,17 @@ export class SlackClient {
     return { ts: result.ts! };
   }
 
-  async postThreadReply(channel: string, threadTs: string, text: string): Promise<void> {
+  async postThreadReply(
+    channel: string,
+    threadTs: string,
+    text: string,
+    blocks?: (KnownBlock | Block)[],
+  ): Promise<void> {
     const result = await this.client.chat.postMessage({
       channel,
       thread_ts: threadTs,
       text,
+      ...(blocks ? { blocks } : {}),
     });
 
     if (!result.ok) {
