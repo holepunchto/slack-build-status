@@ -45,6 +45,9 @@ export interface CreateMessageParams {
   changelogCompareUrl?: string;
   icon?: string;
   extraBadges?: string;
+  /** When false, renders build labels without status emojis — a static
+   * announcement rather than a live status board. Defaults to true. */
+  showStatus?: boolean;
 }
 
 /** GitHub provides: "success", "failure", "cancelled". "shipped" is a custom

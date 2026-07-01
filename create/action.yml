@@ -41,6 +41,10 @@ inputs:
   extra-badges:
     description: Additional badge emojis for the header (e.g. ":badge-staging:")
     required: false
+  show-status:
+    description: 'Render per-build status emojis (live status board). When "false", lists build labels only — a static announcement with no updates.'
+    required: false
+    default: 'true'
   thread-replies:
     description: 'JSON array of thread replies: [{"text":"..."}]'
     required: false

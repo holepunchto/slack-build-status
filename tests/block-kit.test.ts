@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildChangelogBlock,
+  buildLabelsText,
   buildMessage,
   buildStatusText,
   cancelAllInBlocks,
@@ -42,6 +43,25 @@ describe("buildStatusText", () => {
       { name: "aab", label: "aab", group: "Android", status: Status.Pending },
     ];
     expect(buildStatusText(builds)).toBe("apk :ga-running: | SV :ga-pending: | aab :ga-pending:");
+  });
+});
+
+describe("buildLabelsText", () => {
+  it("joins labels with pipes and no status emoji", () => {
+    const builds: Build[] = [
+      { name: "aab", label: "AAB", group: ":nightly-bird:", status: Status.Queued },
+      { name: "apk", label: "APK", group: ":nightly-bird:", status: Status.Pending },
+      { name: "ios", label: "IPA", group: ":nightly-bird:", status: Status.Queued },
+    ];
+    expect(buildLabelsText(builds)).toBe("AAB | APK | IPA");
+  });
+
+  it("keeps the link but drops the status emoji", () => {
+    const builds: Build[] = [
+      { name: "apk", label: "APK", status: Status.Success, link: "https://dl.example.com/apk" },
+      { name: "ios", label: "IPA", status: Status.Pending },
+    ];
+    expect(buildLabelsText(builds)).toBe("<https://dl.example.com/apk|APK> | IPA");
   });
 });
 
@@ -202,6 +222,66 @@ describe("buildMessage", () => {
     );
     const elements = (changelogBlock as any).elements;
     expect(elements[0].text).toContain("/pull/42|(#42)>");
+  });
+
+  it("renders labels only on one line per group when showStatus is false", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: [
+          { name: "aab", label: "AAB", group: ":nightly-bird: :sentry:", status: Status.Queued },
+          { name: "apk", label: "APK", group: ":nightly-bird: :sentry:", status: Status.Pending },
+          { name: "ios", label: "IPA", group: ":nightly-bird: :sentry:", status: Status.Queued },
+        ],
+        version: "1.2.3",
+        branch: "main",
+        gitUrl: "https://github.com/org/repo",
+        showStatus: false,
+      },
+      "org/repo",
+    );
+
+    const statusBlock = payload.blocks.find((b) => "block_id" in b && b.block_id === "statuses");
+    const fields = (statusBlock as any).fields;
+    expect(fields).toHaveLength(1);
+    expect(fields[0].text).toBe(":nightly-bird: :sentry:: AAB | APK | IPA");
+    expect(fields[0].text).not.toContain(":ga-");
+    expect(fields[0].text).not.toContain("\n");
+  });
+
+  it("keeps rendering status emojis when showStatus is omitted", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: [{ name: "apk", label: "APK", group: "Android", status: Status.Running }],
+        version: "1.0.0",
+        branch: "main",
+        gitUrl: "https://github.com/org/repo",
+      },
+      "org/repo",
+    );
+
+    const statusBlock = payload.blocks.find((b) => "block_id" in b && b.block_id === "statuses");
+    const fields = (statusBlock as any).fields;
+    expect(fields[0].text).toBe("Android:\nAPK :ga-running:");
+  });
+
+  it("renders labels only without group prefix when showStatus is false", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: [{ name: "lib", label: "org/repo", status: Status.Running }],
+        version: "1.0.0",
+        branch: "main",
+        gitUrl: "https://github.com/org/repo",
+        showStatus: false,
+      },
+      "org/repo",
+    );
+
+    const statusBlock = payload.blocks.find((b) => "block_id" in b && b.block_id === "statuses");
+    const fields = (statusBlock as any).fields;
+    expect(fields[0].text).toBe("org/repo");
   });
 });
 
