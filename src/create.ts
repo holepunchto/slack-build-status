@@ -30,6 +30,7 @@ async function run(): Promise<void> {
     const gitUrl = core.getInput("git-url", { required: true });
     const icon = core.getInput("icon") || undefined;
     const extraBadges = core.getInput("extra-badges") || undefined;
+    const showStatus = core.getInput("show-status") !== "false";
     const threadRepliesJson = core.getInput("thread-replies") || undefined;
     const notifyUsers = core.getInput("notify-users") || undefined;
     const repo =
@@ -74,6 +75,7 @@ async function run(): Promise<void> {
         changelogCompareUrl: changelogInThread ? undefined : changelogCompareUrl,
         icon,
         extraBadges,
+        showStatus,
       },
       repo,
     );

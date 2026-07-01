@@ -20,6 +20,10 @@ export function buildStatusText(builds: Build[]): string {
   return builds.map(renderBuildStatus).join(" | ");
 }
 
+export function buildLabelsText(builds: Build[]): string {
+  return builds.map((b) => (b.link ? `<${b.link}|${b.label}>` : b.label)).join(" | ");
+}
+
 export function parseStatusText(text: string): ParsedStatus[] {
   const results: ParsedStatus[] = [];
   const segments = text.split(" | ");
@@ -83,8 +87,17 @@ export function buildMessage(
   params: CreateMessageParams,
   repo: string,
 ): SlackPayload {
-  const { builds, version, branch, gitUrl, changelog, changelogCompareUrl, icon, extraBadges } =
-    params;
+  const {
+    builds,
+    version,
+    branch,
+    gitUrl,
+    changelog,
+    changelogCompareUrl,
+    icon,
+    extraBadges,
+    showStatus = true,
+  } = params;
 
   const groups = new Map<string, Build[]>();
   for (const build of builds) {
@@ -110,11 +123,12 @@ export function buildMessage(
 
   const fields: { type: "mrkdwn"; text: string }[] = [];
   for (const [groupName, groupBuilds] of groups) {
-    const statusText = buildStatusText(groupBuilds);
-    fields.push({
-      type: "mrkdwn",
-      text: groupName ? `${groupName}:\n${statusText}` : statusText,
-    });
+    const bodyText = showStatus ? buildStatusText(groupBuilds) : buildLabelsText(groupBuilds);
+    let text = bodyText;
+    if (groupName) {
+      text = showStatus ? `${groupName}:\n${bodyText}` : `${groupName}: ${bodyText}`;
+    }
+    fields.push({ type: "mrkdwn", text });
   }
 
   blocks.push({
