@@ -17,8 +17,8 @@ inputs:
     description: Build version string (e.g. "1.2.3")
     required: true
   branch:
-    description: Git branch name (e.g. "main")
-    required: true
+    description: Git branch name (e.g. "main"). Omit to leave it out of the header entirely.
+    required: false
   git-url:
     description: URL to the git commit/branch (e.g. "https://github.com/owner/repo/tree/main")
     required: true

@@ -150,6 +150,60 @@ describe("buildMessage", () => {
     }
   });
 
+  const headerTextOf = (payload: ReturnType<typeof buildMessage>) => {
+    const header = payload.blocks.find((b) => "block_id" in b && b.block_id === "header");
+    return (header as any).text.text as string;
+  };
+
+  it("renders the branch in parentheses when one is given", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: baseBuilds,
+        version: "1.0.0",
+        branch: "main",
+        gitUrl: "https://github.com/org/repo",
+      },
+      "org/repo",
+    );
+
+    expect(headerTextOf(payload)).toContain("1.0.0 (main)");
+    expect(payload.text).toContain("1.0.0 (main)");
+  });
+
+  it("omits the parentheses entirely when branch is an empty string", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: baseBuilds,
+        version: "1.0.0",
+        branch: "",
+        gitUrl: "https://github.com/org/repo",
+      },
+      "org/repo",
+    );
+
+    expect(headerTextOf(payload)).toContain("1.0.0");
+    expect(headerTextOf(payload)).not.toContain("(");
+    expect(payload.text).not.toContain("()");
+  });
+
+  it("omits the parentheses when branch is not supplied at all", () => {
+    const payload = buildMessage(
+      "C123",
+      {
+        builds: baseBuilds,
+        version: "1.0.0",
+        gitUrl: "https://github.com/org/repo",
+      },
+      "org/repo",
+    );
+
+    expect(headerTextOf(payload)).not.toContain("undefined");
+    expect(headerTextOf(payload)).not.toContain("(");
+    expect(payload.text).not.toContain("undefined");
+  });
+
   it("groups builds by group field", () => {
     const payload = buildMessage(
       "C123",
