@@ -14,7 +14,7 @@ Post an initial build status message.
 | `channel-id` | yes | `C0123456789` | Slack channel ID |
 | `builds` | yes | `[{"name":"apk","label":"APK","group":"Android","status":"running"}]` | JSON array of builds: `{name, label, group, status?, link?}` |
 | `version` | yes | `1.2.3` | Build version string |
-| `branch` | yes | `main` | Git branch name |
+| `branch` | no | `main` | Git branch name. Rendered as `version (branch)` in the header; omit it and the header is just `version` |
 | `git-url` | yes | `https://github.com/owner/repo/tree/main` | URL to the git commit/branch |
 | `changelog-from` | no | `v1.0.0` | Git ref to generate changelog from (auto-generates changelog and compare URL) |
 | `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Manual changelog text, overrides `changelog-from` (`#N` and `(#N)` are auto-linked) |

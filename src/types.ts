@@ -39,7 +39,7 @@ export interface SlackMessageRef {
 export interface CreateMessageParams {
   builds: Build[];
   version: string;
-  branch: string;
+  branch?: string;
   gitUrl: string;
   changelog?: string;
   changelogCompareUrl?: string;

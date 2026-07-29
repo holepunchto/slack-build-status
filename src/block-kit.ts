@@ -108,10 +108,11 @@ export function buildMessage(
   }
 
   const badges = [icon, extraBadges].filter(Boolean).join(" ");
-  const headerText = `${badges ? `${badges} ` : ""}*<${gitUrl}|${version} (${branch})>*`;
+  const branchSuffix = branch ? ` (${branch})` : "";
+  const headerText = `${badges ? `${badges} ` : ""}*<${gitUrl}|${version}${branchSuffix}>*`;
 
   const statusParts = builds.map((b) => `${b.label}: ${b.status}`);
-  const fallbackText = `Build ${version} (${branch}) — ${statusParts.join(", ")}`;
+  const fallbackText = `Build ${version}${branchSuffix} — ${statusParts.join(", ")}`;
 
   const blocks: (KnownBlock | Block)[] = [
     {

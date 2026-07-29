@@ -26,7 +26,7 @@ async function run(): Promise<void> {
     const channelId = core.getInput("channel-id", { required: true });
     const buildsJson = core.getInput("builds", { required: true });
     const version = core.getInput("version", { required: true });
-    const branch = core.getInput("branch", { required: true });
+    const branch = core.getInput("branch") || undefined;
     const gitUrl = core.getInput("git-url", { required: true });
     const icon = core.getInput("icon") || undefined;
     const extraBadges = core.getInput("extra-badges") || undefined;
