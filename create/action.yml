@@ -64,5 +64,5 @@ outputs:
     description: Slack message timestamp (used to update the message later)
 
 runs:
-  using: node20
+  using: node24
   main: ../dist/create/index.js
