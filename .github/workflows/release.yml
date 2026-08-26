@@ -71,12 +71,21 @@ jobs:
           npm version "$TARGET" --no-git-tag-version --allow-same-version > /dev/null
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B v1
+          # Commit onto the tip of v1 rather than resetting the branch to main:
+          # the index still holds main's tree, so the new commit carries main's
+          # content with the previous release as its parent. Resetting would
+          # leave every earlier release commit on no branch at all.
+          git fetch origin "+refs/heads/v1:refs/heads/v1" || true
+          if git rev-parse -q --verify refs/heads/v1 > /dev/null; then
+            git symbolic-ref HEAD refs/heads/v1
+          else
+            git checkout -B v1
+          fi
           git add -f dist/ package.json
-          git commit -m "chore(release): v${TARGET}"
+          git commit -m "chore(release): v${TARGET} (from ${GITHUB_SHA:0:7})"
           git tag "v${TARGET}"
           git push origin "refs/tags/v${TARGET}"
-          git push -f origin "HEAD:refs/heads/v1"
+          git push origin "HEAD:refs/heads/v1"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Publish the release
