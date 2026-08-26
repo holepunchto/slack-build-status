@@ -215,9 +215,10 @@ commits the bundles onto the tip of the `v1` branch, tags that commit `vX.Y.Z`
 and publishes a GitHub release with generated notes. The next version is derived
 from the newest existing tag, and a version that is already tagged is refused.
 
-Each release commits *onto* `v1` rather than resetting the branch to `main`, so
-`git log v1` reads as the release history and every tagged release stays on the
-branch. The commit carries `main`'s tree - only its parent comes from `v1`.
+Each release commit carries `main`'s tree and has two parents: the previous
+release, so `git log v1 --first-parent` reads as the release history and every
+tagged release stays on the branch, and the `main` commit being released, so the
+generated notes still list what landed since the last one.
 
 Consumers pin the released commit, never a moving ref, and name the version so
 the pin can be read at a glance:
