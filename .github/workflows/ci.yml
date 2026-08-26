@@ -25,4 +25,10 @@ jobs:
       - run: npm ci
 
       - name: Lint
-        run: npx biome lint .
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test

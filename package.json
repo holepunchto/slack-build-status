@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:create && npm run build:update && npm run build:cancel-all && npm run build:upload",
+    "sync:node-version": "node scripts/sync-node-version.mjs",
     "build:create": "ncc build src/create.ts -o dist/create --license licenses.txt",
     "build:update": "ncc build src/update.ts -o dist/update --license licenses.txt",
     "build:cancel-all": "ncc build src/cancel-all.ts -o dist/cancel-all --license licenses.txt",
