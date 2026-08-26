@@ -71,22 +71,25 @@ jobs:
           npm version "$TARGET" --no-git-tag-version --allow-same-version > /dev/null
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Commit onto the tip of v1 rather than resetting the branch to main:
-          # the index still holds main's tree, so the new commit carries main's
-          # content with the previous release as its parent. Resetting would
-          # leave every earlier release commit on no branch at all.
           git fetch origin "+refs/heads/v1:refs/heads/v1" || true
-          if git rev-parse -q --verify refs/heads/v1 > /dev/null; then
-            git symbolic-ref HEAD refs/heads/v1
-          else
-            git checkout -B v1
-          fi
           git add -f dist/ package.json
-          git commit -m "chore(release): v${TARGET} (from ${GITHUB_SHA:0:7})"
-          git tag "v${TARGET}"
+          tree=$(git write-tree)
+          # Two parents on purpose. First is the previous release, so v1 advances
+          # by fast-forward and every tagged release keeps belonging to it -
+          # resetting the branch to main would leave earlier releases on no branch
+          # at all. Second is the commit being released, so `v(N-1)..vN` spans what
+          # landed on main and the generated notes list it.
+          if git rev-parse -q --verify refs/heads/v1 > /dev/null; then
+            parents=(-p refs/heads/v1 -p "$GITHUB_SHA")
+          else
+            parents=(-p "$GITHUB_SHA")
+          fi
+          commit=$(git commit-tree "$tree" "${parents[@]}" -m "chore(release): v${TARGET} (from ${GITHUB_SHA:0:7})")
+          git update-ref refs/heads/v1 "$commit"
+          git tag "v${TARGET}" "$commit"
           git push origin "refs/tags/v${TARGET}"
-          git push origin "HEAD:refs/heads/v1"
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git push origin refs/heads/v1
+          echo "sha=${commit}" >> "$GITHUB_OUTPUT"
 
       - name: Publish the release
         env:
