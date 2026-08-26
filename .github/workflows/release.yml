@@ -2,6 +2,21 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      bump:
+        description: semver bump to apply
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      version:
+        description: exact version to release, overriding bump (e.g. 1.4.0)
+        type: string
+        required: false
+
+concurrency: release
 
 jobs:
   release:
@@ -10,6 +25,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -20,11 +37,56 @@ jobs:
       - run: npm test
       - run: npm run build
 
-      - name: Push to v1 branch
+      - name: Resolve the target version
+        id: target
+        env:
+          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
         run: |
+          latest=$(git tag --list 'v*.*.*' --sort=-v:refname | head -1)
+          current="${latest#v}"
+          [ -n "$current" ] || current=$(node -p "require('./package.json').version")
+          if [ -n "$VERSION" ]; then
+            target="${VERSION#v}"
+          else
+            IFS=. read -r major minor patch <<< "$current"
+            case "$BUMP" in
+              major) major=$((major + 1)); minor=0; patch=0 ;;
+              minor) minor=$((minor + 1)); patch=0 ;;
+              patch) patch=$((patch + 1)) ;;
+            esac
+            target="${major}.${minor}.${patch}"
+          fi
+          if git rev-parse -q --verify "refs/tags/v${target}" > /dev/null; then
+            echo "v${target} is already tagged" >&2
+            exit 1
+          fi
+          echo "target=${target}" >> "$GITHUB_OUTPUT"
+
+      - name: Push the build to v1 and tag it
+        id: publish
+        env:
+          TARGET: ${{ steps.target.outputs.target }}
+        run: |
+          npm version "$TARGET" --no-git-tag-version --allow-same-version > /dev/null
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B v1
-          git add -f dist/
-          git commit -m "chore: build dist for $(git rev-parse --short HEAD)" || echo "No changes"
-          git push origin v1 --force
+          git add -f dist/ package.json
+          git commit -m "chore(release): v${TARGET}"
+          git tag "v${TARGET}"
+          git push origin "refs/tags/v${TARGET}"
+          git push -f origin "HEAD:refs/heads/v1"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          TARGET: ${{ steps.target.outputs.target }}
+          SHA: ${{ steps.publish.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${TARGET}" --target "$SHA" --title "v${TARGET}" --generate-notes
+          {
+            printf 'Released **v%s**\n\n' "$TARGET"
+            printf 'Pin callers at:\n\n```yaml\nuses: holepunchto/slack-build-status/create@%s # v%s\n```\n' "$SHA" "$TARGET"
+          } >> "$GITHUB_STEP_SUMMARY"
