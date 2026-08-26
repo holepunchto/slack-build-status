@@ -205,4 +205,26 @@ npm run check       # lint + format with Biome (auto-fix)
 npm run build       # bundle actions into dist/
 ```
 
-`dist/` is gitignored on `main`. A [release workflow](.github/workflows/release.yml) builds and force-pushes bundles to the `v1` branch on every push to `main`. Consumers reference `@v1`.
+`dist/` is gitignored on `main`.
+
+## Releasing
+
+Run the [release workflow](.github/workflows/release.yml) by hand, choosing a
+`patch`/`minor`/`major` bump (or passing an exact `version`). It tests, builds,
+commits the bundles onto the tip of the `v1` branch, tags that commit `vX.Y.Z`
+and publishes a GitHub release with generated notes. The next version is derived
+from the newest existing tag, and a version that is already tagged is refused.
+
+Each release commits *onto* `v1` rather than resetting the branch to `main`, so
+`git log v1` reads as the release history and every tagged release stays on the
+branch. The commit carries `main`'s tree - only its parent comes from `v1`.
+
+Consumers pin the released commit, never a moving ref, and name the version so
+the pin can be read at a glance:
+
+```yaml
+uses: holepunchto/slack-build-status/create@<sha> # v1.2.3
+```
+
+The workflow prints that exact line in its job summary. `v1` stays a branch
+rather than a tag, so the sha a caller pinned last release keeps resolving.

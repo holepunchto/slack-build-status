@@ -25,5 +25,5 @@ outputs:
     description: Slack file ID
 
 runs:
-  using: node20
+  using: node24
   main: ../dist/upload/index.js
