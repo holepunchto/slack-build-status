@@ -38,6 +38,7 @@ async function run(): Promise<void> {
     const label = core.getInput("label") || undefined;
     const changelog = core.getInput("changelog") || undefined;
     const changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
+    const notifyUsers = core.getInput("notify-users") || undefined;
 
     const client = new SlackClient(token);
 
@@ -98,6 +99,10 @@ async function run(): Promise<void> {
 
     await client.updateMessage(channelId, ts, blocks);
     core.info("Message updated successfully");
+
+    if (notifyUsers) {
+      await client.postThreadReply(channelId, ts, `CC: ${notifyUsers}`);
+    }
   } catch (error) {
     core.setFailed(error instanceof Error ? error.message : String(error));
   }

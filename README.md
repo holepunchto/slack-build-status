@@ -48,6 +48,7 @@ Update a specific build's status in an existing message.
 | `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Replaces the message changelog, or adds one after the statuses (`#N` and `(#N)` are auto-linked). Omit to keep the current changelog |
 | `changelog-compare-url` | no | `https://github.com/owner/repo/compare/v1.0.0...v1.1.0` | Compare URL for the changelog header |
 | `repo` | no | `owner/repo` | GitHub repo for PR link detection (defaults to current) |
+| `notify-users` | no | `<@U0123> <@U0456>` | Slack user mentions to CC in thread after the update |
 
 ### `cancel-all`
 

@@ -14,6 +14,7 @@ vi.mock("@actions/core", () => ({
 
 const mockGetMessage = vi.fn();
 const mockUpdateMessage = vi.fn();
+const mockPostThreadReply = vi.fn();
 vi.mock("../src/slack-client.js", () => ({
   SlackClient: vi.fn().mockImplementation(() => ({
     getMessage: mockGetMessage,
@@ -26,6 +27,7 @@ describe("update action", () => {
     vi.clearAllMocks();
     mockGetMessage.mockResolvedValue(structuredClone(sampleMessage));
     mockUpdateMessage.mockResolvedValue(undefined);
+    mockPostThreadReply.mockResolvedValue(undefined);
   });
 
   function setupInputs(overrides: Record<string, string> = {}) {
@@ -302,6 +304,7 @@ describe("update action", () => {
       SlackClient: vi.fn().mockImplementation(() => ({
         getMessage: mockGetMessage,
         updateMessage: mockUpdateMessage,
+        postThreadReply: mockPostThreadReply,
       })),
     }));
     await import("../src/update.js");
@@ -340,6 +343,35 @@ describe("update action", () => {
 
     const [, , blocks] = mockUpdateMessage.mock.calls[0];
     expect(blocks[2]).toEqual(sampleMessage.blocks[2]);
+  });
+
+  it("posts a CC thread reply after the update when notify-users is set", async () => {
+    await runUpdate({ "notify-users": "<@U0123> <@U0456>" });
+
+    expect(mockPostThreadReply).toHaveBeenCalledTimes(1);
+    expect(mockPostThreadReply).toHaveBeenCalledWith(
+      "C123456",
+      "1234567890.123456",
+      "CC: <@U0123> <@U0456>",
+    );
+    expect(mockUpdateMessage.mock.invocationCallOrder[0]).toBeLessThan(
+      mockPostThreadReply.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("posts no thread reply when notify-users is empty", async () => {
+    await runUpdate({});
+
+    expect(mockUpdateMessage).toHaveBeenCalledTimes(1);
+    expect(mockPostThreadReply).not.toHaveBeenCalled();
+  });
+
+  it("posts no thread reply when the update fails", async () => {
+    mockUpdateMessage.mockRejectedValue(new Error("update failed"));
+    await runUpdate({ "notify-users": "<@U0123>" });
+
+    expect(mockSetFailed).toHaveBeenCalledWith("update failed");
+    expect(mockPostThreadReply).not.toHaveBeenCalled();
   });
 
   it("calls setFailed on error", async () => {

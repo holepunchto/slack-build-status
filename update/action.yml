@@ -48,6 +48,9 @@ inputs:
   repo:
     description: GitHub repo (owner/name) for PR link detection. Defaults to current repo. (e.g. "owner/repo")
     required: false
+  notify-users:
+    description: Slack user mentions to CC in thread after the update (e.g. "<@U123> <@U456>")
+    required: false
   also-update:
     description: 'JSON array of additional updates: [{"name":"...","status":"...","link":"...","group":"...","label":"..."}]'
     required: false
