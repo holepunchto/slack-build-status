@@ -101,6 +101,40 @@ describe("update action", () => {
     expect(androidField).toContain("SV :ga-running:");
   });
 
+  it("renames the matched build when label is set", async () => {
+    setupInputs({
+      "build-name": "SV",
+      status: "success",
+      label: "SV 1.2.3",
+      "also-update": JSON.stringify([{ name: "aab", status: "running", label: "AAB 1.2.3" }]),
+    });
+    vi.resetModules();
+
+    vi.doMock("@actions/core", () => ({
+      getInput: (...args: any[]) => mockGetInput(...args),
+      setOutput: (...args: any[]) => mockSetOutput(...args),
+      setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
+      warning: vi.fn(),
+    }));
+    vi.doMock("../src/slack-client.js", () => ({
+      SlackClient: vi.fn().mockImplementation(() => ({
+        getMessage: mockGetMessage,
+        updateMessage: mockUpdateMessage,
+      })),
+    }));
+
+    await import("../src/update.js");
+    await new Promise((r) => setTimeout(r, 50));
+
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    const fields = (blocks[1] as any).fields;
+    expect(fields[0].text).toBe(
+      "Android:\napk :ga-running: | SV 1.2.3 :ga-success: | AAB 1.2.3 :ga-running:",
+    );
+    expect(fields[1].text).toBe("iOS:\nTestflight :ga-pending:");
+  });
+
   it("scopes the update to a specific group when group input is set", async () => {
     setupInputs({
       "build-name": "AAB",

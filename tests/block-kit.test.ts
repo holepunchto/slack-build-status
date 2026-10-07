@@ -410,6 +410,25 @@ describe("updateBuildInBlocks", () => {
     );
   });
 
+  it("replaces the matched build's label when a new label is given", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    const withLink = updateBuildInBlocks(blocks, "apk", Status.Running, "https://keep.me");
+    const updated = updateBuildInBlocks(
+      withLink,
+      "apk",
+      Status.Success,
+      undefined,
+      undefined,
+      "APK 1.2.3",
+    );
+
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe(
+      "Android:\n<https://keep.me|APK 1.2.3 :ga-success:> | SV :ga-pending: | aab :ga-pending:",
+    );
+    expect(fields[1].text).toBe("iOS:\nTestflight :ga-pending:");
+  });
+
   it("updates status in fields without group prefix", () => {
     const blocks = [
       { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },

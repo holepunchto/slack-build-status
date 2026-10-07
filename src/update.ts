@@ -9,6 +9,7 @@ interface AlsoUpdate {
   status: string;
   link?: string;
   group?: string;
+  label?: string;
 }
 
 function hasGroupHeading(blocks: (KnownBlock | Block)[], group: string): boolean {
@@ -33,6 +34,7 @@ async function run(): Promise<void> {
     const filePath = core.getInput("file-path") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
     const topLevelGroup = core.getInput("group") || undefined;
+    const label = core.getInput("label") || undefined;
 
     const client = new SlackClient(token);
 
@@ -54,7 +56,7 @@ async function run(): Promise<void> {
     const groupSuffix = topLevelGroup ? ` in group "${topLevelGroup}"` : "";
     core.info(`Updating build "${buildName}" to "${statusInput}"${groupSuffix} (ts: ${ts})`);
 
-    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link, topLevelGroup);
+    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link, topLevelGroup, label);
     if (topLevelGroup && !hasGroupHeading(message.blocks, topLevelGroup)) {
       core.warning(
         `Group '${topLevelGroup}' not found in message; update for "${buildName}" skipped`,
@@ -68,7 +70,14 @@ async function run(): Promise<void> {
         const entrySuffix = updateGroup ? ` in group "${updateGroup}"` : "";
         core.info(`Also updating "${update.name}" to "${update.status}"${entrySuffix}`);
         const updateStatus = mapJobStatus(update.status);
-        blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link, updateGroup);
+        blocks = updateBuildInBlocks(
+          blocks,
+          update.name,
+          updateStatus,
+          update.link,
+          updateGroup,
+          update.label,
+        );
         if (updateGroup && !hasGroupHeading(message.blocks, updateGroup)) {
           core.warning(
             `Group '${updateGroup}' not found in message; update for "${update.name}" skipped`,

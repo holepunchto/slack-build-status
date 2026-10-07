@@ -175,6 +175,7 @@ export function updateBuildInBlocks(
   newStatus: Status,
   link?: string,
   group?: string,
+  label?: string,
 ): (KnownBlock | Block)[] {
   const result = structuredClone(blocks);
   const fields = findStatusFields(result);
@@ -198,6 +199,7 @@ export function updateBuildInBlocks(
 
     parsed[buildIndex].emoji = STATUS_EMOJI[newStatus];
     parsed[buildIndex].link = link ?? parsed[buildIndex].link;
+    parsed[buildIndex].name = label ?? parsed[buildIndex].name;
 
     const rendered = parsed
       .map((p) => {
