@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
+import * as github from "@actions/github";
 import type { Block, KnownBlock } from "@slack/web-api";
-import { updateBuildInBlocks } from "./block-kit.js";
+import { updateBuildInBlocks, upsertChangelogBlock } from "./block-kit.js";
 import { SlackClient } from "./slack-client.js";
 import { mapJobStatus } from "./types.js";
 
@@ -35,6 +36,8 @@ async function run(): Promise<void> {
     const alsoUpdateJson = core.getInput("also-update") || undefined;
     const topLevelGroup = core.getInput("group") || undefined;
     const label = core.getInput("label") || undefined;
+    const changelog = core.getInput("changelog") || undefined;
+    const changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
 
     const client = new SlackClient(token);
 
@@ -84,6 +87,13 @@ async function run(): Promise<void> {
           );
         }
       }
+    }
+
+    if (changelog) {
+      const repo =
+        core.getInput("repo") || `${github.context.repo.owner}/${github.context.repo.repo}`;
+      core.info("Replacing changelog");
+      blocks = upsertChangelogBlock(blocks, changelog, changelogCompareUrl, repo);
     }
 
     await client.updateMessage(channelId, ts, blocks);

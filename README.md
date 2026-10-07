@@ -45,6 +45,9 @@ Update a specific build's status in an existing message.
 | `label` | no | `APK 1.2.3` | New display label for the matched build (`build-name` still matches the current label) |
 | `file-path` | no | `build/outputs/app.apk` | File to upload to thread and link to this build |
 | `also-update` | no | `[{"name":"aab","status":"running"}]` | JSON array of additional updates: `{name, status, link?, group?, label?}` |
+| `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Replaces the message changelog, or adds one after the statuses (`#N` and `(#N)` are auto-linked). Omit to keep the current changelog |
+| `changelog-compare-url` | no | `https://github.com/owner/repo/compare/v1.0.0...v1.1.0` | Compare URL for the changelog header |
+| `repo` | no | `owner/repo` | GitHub repo for PR link detection (defaults to current) |
 
 ### `cancel-all`
 

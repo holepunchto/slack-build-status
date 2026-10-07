@@ -82,6 +82,27 @@ export function buildChangelogBlock(
   } as KnownBlock;
 }
 
+export function upsertChangelogBlock(
+  blocks: (KnownBlock | Block)[],
+  changelog: string,
+  changelogCompareUrl: string | undefined,
+  repo: string,
+): (KnownBlock | Block)[] {
+  const result = structuredClone(blocks);
+  const changelogBlock = buildChangelogBlock(changelog, changelogCompareUrl, repo);
+  if (!changelogBlock) return result;
+
+  const existingIndex = result.findIndex((b) => "block_id" in b && b.block_id === "changelog");
+  if (existingIndex !== -1) {
+    result[existingIndex] = changelogBlock;
+    return result;
+  }
+
+  const statusesIndex = result.findIndex((b) => "block_id" in b && b.block_id === "statuses");
+  result.splice(statusesIndex === -1 ? result.length : statusesIndex + 1, 0, changelogBlock);
+  return result;
+}
+
 export function buildMessage(
   channelId: string,
   params: CreateMessageParams,

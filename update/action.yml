@@ -36,6 +36,18 @@ inputs:
   file-path:
     description: File to upload to the thread and link to this build (e.g. "build/outputs/app.apk")
     required: false
+  changelog:
+    description: >
+      Changelog text that replaces the changelog block of the message, or is added
+      after the statuses when the message has none (#N and (#N) references are
+      auto-linked to GitHub PRs). Omit it to keep the current changelog.
+    required: false
+  changelog-compare-url:
+    description: 'Compare URL for the changelog header (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")'
+    required: false
+  repo:
+    description: GitHub repo (owner/name) for PR link detection. Defaults to current repo. (e.g. "owner/repo")
+    required: false
   also-update:
     description: 'JSON array of additional updates: [{"name":"...","status":"...","link":"...","group":"...","label":"..."}]'
     required: false

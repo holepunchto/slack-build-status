@@ -8,6 +8,7 @@ import {
   parseStatusText,
   renderBuildStatus,
   updateBuildInBlocks,
+  upsertChangelogBlock,
 } from "../src/block-kit.js";
 import { type Build, STATUS_EMOJI, Status } from "../src/types.js";
 import sampleMessage from "./fixtures/sample-message.json";
@@ -572,5 +573,47 @@ describe("buildChangelogBlock", () => {
 
   it("returns null when changelog is empty", () => {
     expect(buildChangelogBlock("", undefined, "org/repo")).toBeNull();
+  });
+});
+
+describe("upsertChangelogBlock", () => {
+  it("replaces the existing changelog block in place", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    const updated = upsertChangelogBlock(
+      blocks,
+      "fix bug (#42)",
+      "https://github.com/org/repo/compare/v1.2.0...main",
+      "org/repo",
+    ) as any[];
+
+    expect(updated).toHaveLength(3);
+    expect(updated[0]).toEqual(blocks[0]);
+    expect(updated[1]).toEqual(blocks[1]);
+    expect(updated[2].block_id).toBe("changelog");
+    expect(updated[2].elements[0].text).toContain(
+      "*<https://github.com/org/repo/compare/v1.2.0...main|Changelog:>*",
+    );
+    expect(updated[2].elements[0].text).toContain("/pull/42|(#42)>");
+    expect(updated[2].elements[0].text).not.toContain("feat: add login");
+  });
+
+  it("inserts the changelog block after the statuses block when none exists", () => {
+    const footer = { type: "context", block_id: "footer", elements: [] };
+    const blocks = [sampleMessage.blocks[0], sampleMessage.blocks[1], footer];
+    const updated = upsertChangelogBlock(blocks, "fix bug (#42)", undefined, "org/repo") as any[];
+
+    expect(updated.map((b) => b.block_id)).toEqual(["header", "statuses", "changelog", "footer"]);
+    expect(updated[2].elements[0].text).toContain("/pull/42|(#42)>");
+  });
+
+  it("returns unchanged blocks when changelog is empty", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    expect(upsertChangelogBlock(blocks, "", undefined, "org/repo")).toEqual(blocks);
+  });
+
+  it("does not mutate the original blocks", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    upsertChangelogBlock(blocks, "fix bug (#42)", undefined, "org/repo");
+    expect(blocks).toEqual(sampleMessage.blocks);
   });
 });

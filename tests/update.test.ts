@@ -285,6 +285,63 @@ describe("update action", () => {
     );
   });
 
+  async function runUpdate(overrides: Record<string, string>) {
+    setupInputs(overrides);
+    vi.resetModules();
+    vi.doMock("@actions/core", () => ({
+      getInput: (...args: any[]) => mockGetInput(...args),
+      setOutput: (...args: any[]) => mockSetOutput(...args),
+      setFailed: (...args: any[]) => mockSetFailed(...args),
+      info: vi.fn(),
+      warning: vi.fn(),
+    }));
+    vi.doMock("@actions/github", () => ({
+      context: { repo: { owner: "default-org", repo: "default-repo" } },
+    }));
+    vi.doMock("../src/slack-client.js", () => ({
+      SlackClient: vi.fn().mockImplementation(() => ({
+        getMessage: mockGetMessage,
+        updateMessage: mockUpdateMessage,
+      })),
+    }));
+    await import("../src/update.js");
+    await new Promise((r) => setTimeout(r, 50));
+  }
+
+  it("replaces the changelog block when changelog is set", async () => {
+    await runUpdate({
+      changelog: "fix bug (#42)",
+      "changelog-compare-url": "https://github.com/org/repo/compare/v1.2.0...main",
+      repo: "org/repo",
+    });
+
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    const changelogBlocks = blocks.filter((b: any) => b.block_id === "changelog");
+    expect(changelogBlocks).toHaveLength(1);
+    const text = changelogBlocks[0].elements[0].text;
+    expect(text).toContain("*<https://github.com/org/repo/compare/v1.2.0...main|Changelog:>*");
+    expect(text).toContain("https://github.com/org/repo/pull/42");
+    expect(text).not.toContain("feat: add login");
+    expect((blocks[1] as any).fields[0].text).toContain("apk :ga-success:");
+  });
+
+  it("links PRs against the current repo when repo is not set", async () => {
+    await runUpdate({ changelog: "fix bug (#42)" });
+
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    const changelogBlock = blocks.find((b: any) => b.block_id === "changelog");
+    expect(changelogBlock.elements[0].text).toContain(
+      "https://github.com/default-org/default-repo/pull/42",
+    );
+  });
+
+  it("leaves the existing changelog block untouched when changelog is empty", async () => {
+    await runUpdate({});
+
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    expect(blocks[2]).toEqual(sampleMessage.blocks[2]);
+  });
+
   it("calls setFailed on error", async () => {
     mockGetMessage.mockRejectedValue(new Error("network error"));
     setupInputs();
