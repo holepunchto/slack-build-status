@@ -15,7 +15,7 @@ inputs:
     description: Name of the build to update (must match a name from the create step, e.g. "apk")
     required: true
   status:
-    description: New status — one of "success", "failure", "cancelled", "skipped", or GitHub job.status
+    description: New status — one of "success", "failure", "cancelled", "skipped", "warning", or GitHub job.status
     required: true
   link:
     description: URL to attach to this build (e.g. artifact download link)

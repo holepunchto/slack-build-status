@@ -101,6 +101,17 @@ describe("parseStatusText", () => {
       { name: "SV", emoji: ":ga-failed:" },
     ]);
   });
+
+  it("round-trips the warning status", () => {
+    const builds: Build[] = [
+      { name: "apk", label: "APK", status: Status.Warning, link: "https://dl.example.com/apk" },
+      { name: "aab", label: "AAB", status: Status.Warning },
+    ];
+    expect(parseStatusText(buildStatusText(builds))).toEqual([
+      { name: "APK", emoji: ":warning:", link: "https://dl.example.com/apk" },
+      { name: "AAB", emoji: ":warning:" },
+    ]);
+  });
 });
 
 describe("buildMessage", () => {
@@ -385,6 +396,18 @@ describe("updateBuildInBlocks", () => {
     const fields = (updated[1] as any).fields;
     expect(fields[0].text).toContain("https://keep.me");
     expect(fields[0].text).toContain(":ga-failed:");
+  });
+
+  it("moves a build from warning to another status", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    const warned = updateBuildInBlocks(blocks, "apk", Status.Warning, "https://keep.me");
+    expect((warned[1] as any).fields[0].text).toContain("<https://keep.me|apk :warning:>");
+
+    const updated = updateBuildInBlocks(warned, "apk", Status.Success);
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe(
+      "Android:\n<https://keep.me|apk :ga-success:> | SV :ga-pending: | aab :ga-pending:",
+    );
   });
 
   it("updates status in fields without group prefix", () => {
