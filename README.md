@@ -42,7 +42,7 @@ Update a specific build's status in an existing message.
 | `build-name` | yes | `apk` | Build name to update (must match `name` from `create`) |
 | `status` | yes | `success` | New status: `success`, `failure`, `cancelled`, `skipped`, `warning`, or GitHub `job.status` |
 | `link` | no | `https://example.com/download/app.apk` | URL to attach (e.g. artifact download link) |
-| `label` | no | `APK 1.2.3` | New display label for the matched build (`build-name` still matches the current label) |
+| `label` | no | `APK 1.2.3` | New display label for the matched build. `build-name` still matches the current label, or a label that starts with `build-name` and a space (`android-a` matches `android-a 31/34`, not `android-ab`); an exact match wins |
 | `file-path` | no | `build/outputs/app.apk` | File to upload to thread and link to this build |
 | `also-update` | no | `[{"name":"aab","status":"running"}]` | JSON array of additional updates: `{name, status, link?, group?, label?}` |
 | `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Replaces the message changelog, or adds one after the statuses (`#N` and `(#N)` are auto-linked). Omit to keep the current changelog |

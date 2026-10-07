@@ -374,6 +374,31 @@ describe("update action", () => {
     expect(mockPostThreadReply).not.toHaveBeenCalled();
   });
 
+  it("matches renamed builds by label prefix for build-name and also-update", async () => {
+    const message = structuredClone(sampleMessage);
+    message.blocks[1].fields = [
+      {
+        type: "mrkdwn",
+        text: "Android:\nandroid-a 31/34 :ga-failed: | android-b 30/34 :ga-failed:",
+      },
+    ];
+    mockGetMessage.mockResolvedValue(message);
+
+    await runUpdate({
+      "build-name": "android-a",
+      status: "success",
+      label: "android-a 34/34",
+      "also-update": JSON.stringify([
+        { name: "android-b", status: "warning", label: "android-b 33/34" },
+      ]),
+    });
+
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    expect((blocks[1] as any).fields[0].text).toBe(
+      "Android:\nandroid-a 34/34 :ga-success: | android-b 33/34 :warning:",
+    );
+  });
+
   it("calls setFailed on error", async () => {
     mockGetMessage.mockRejectedValue(new Error("network error"));
     setupInputs();

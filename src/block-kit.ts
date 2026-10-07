@@ -190,6 +190,13 @@ function findStatusFields(blocks: (KnownBlock | Block)[]): { type: string; text:
   return null;
 }
 
+interface BuildMatch {
+  field: { type: string; text: string };
+  lines: string[];
+  parsed: ParsedStatus[];
+  index: number;
+}
+
 export function updateBuildInBlocks(
   blocks: (KnownBlock | Block)[],
   buildName: string,
@@ -202,6 +209,11 @@ export function updateBuildInBlocks(
   const fields = findStatusFields(result);
   if (!fields) return result;
 
+  const exactName = buildName.toLowerCase();
+  const prefixName = `${exactName} `;
+  let exactMatch: BuildMatch | undefined;
+  let prefixMatch: BuildMatch | undefined;
+
   for (const field of fields) {
     const lines = field.text.split("\n");
     const hasGroup = lines.length >= 2;
@@ -213,25 +225,34 @@ export function updateBuildInBlocks(
 
     const statusLine = hasGroup ? lines.slice(1).join("\n") : lines[0];
     const parsed = parseStatusText(statusLine);
-    const buildIndex = parsed.findIndex(
-      (p) => p.name === buildName || p.name.toLowerCase() === buildName.toLowerCase(),
-    );
-    if (buildIndex === -1) continue;
+    const exactIndex = parsed.findIndex((p) => p.name.toLowerCase() === exactName);
+    if (exactIndex !== -1) {
+      exactMatch = { field, lines, parsed, index: exactIndex };
+      break;
+    }
 
-    parsed[buildIndex].emoji = STATUS_EMOJI[newStatus];
-    parsed[buildIndex].link = link ?? parsed[buildIndex].link;
-    parsed[buildIndex].name = label ?? parsed[buildIndex].name;
-
-    const rendered = parsed
-      .map((p) => {
-        if (p.link) return `<${p.link}|${p.name} ${p.emoji}>`;
-        return `${p.name} ${p.emoji}`;
-      })
-      .join(" | ");
-
-    field.text = hasGroup ? `${lines[0]}\n${rendered}` : rendered;
-    break;
+    const prefixIndex = parsed.findIndex((p) => p.name.toLowerCase().startsWith(prefixName));
+    if (prefixIndex !== -1 && !prefixMatch) {
+      prefixMatch = { field, lines, parsed, index: prefixIndex };
+    }
   }
+
+  const match = exactMatch ?? prefixMatch;
+  if (!match) return result;
+
+  const { field, lines, parsed, index } = match;
+  parsed[index].emoji = STATUS_EMOJI[newStatus];
+  parsed[index].link = link ?? parsed[index].link;
+  parsed[index].name = label ?? parsed[index].name;
+
+  const rendered = parsed
+    .map((p) => {
+      if (p.link) return `<${p.link}|${p.name} ${p.emoji}>`;
+      return `${p.name} ${p.emoji}`;
+    })
+    .join(" | ");
+
+  field.text = lines.length >= 2 ? `${lines[0]}\n${rendered}` : rendered;
 
   return result;
 }

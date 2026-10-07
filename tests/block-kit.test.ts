@@ -522,6 +522,99 @@ describe("updateBuildInBlocks", () => {
     expect(fields[0].text).toBe("Android :internal-bird::\nAAB :ga-success:");
     expect(fields[1].text).toBe("Android :production-bird::\nAAB :ga-running:");
   });
+
+  function statusBlocks(...texts: string[]) {
+    return [
+      { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+      {
+        type: "section",
+        block_id: "statuses",
+        fields: texts.map((text) => ({ type: "mrkdwn", text })),
+      },
+    ];
+  }
+
+  it("matches a renamed build whose label starts with the build name and a space", () => {
+    const blocks = statusBlocks(
+      "Android:\nandroid-a 31/34 :ga-failed: | <https://keep.me|Android-B 34/34 :ga-success:>",
+    );
+
+    const updated = updateBuildInBlocks(blocks, "android-a", Status.Running);
+    expect((updated[1] as any).fields[0].text).toBe(
+      "Android:\nandroid-a 31/34 :ga-running: | <https://keep.me|Android-B 34/34 :ga-success:>",
+    );
+
+    const relabeled = updateBuildInBlocks(
+      updated,
+      "android-b",
+      Status.Failure,
+      undefined,
+      undefined,
+      "android-b 33/34",
+    );
+    expect((relabeled[1] as any).fields[0].text).toBe(
+      "Android:\nandroid-a 31/34 :ga-running: | <https://keep.me|android-b 33/34 :ga-failed:>",
+    );
+  });
+
+  it("prefers an exact label match over a prefix match", () => {
+    const sameField = updateBuildInBlocks(
+      statusBlocks("Android:\nandroid 3/4 :ga-failed: | android :ga-pending:"),
+      "android",
+      Status.Success,
+    );
+    expect((sameField[1] as any).fields[0].text).toBe(
+      "Android:\nandroid 3/4 :ga-failed: | android :ga-success:",
+    );
+
+    const laterField = updateBuildInBlocks(
+      statusBlocks("Internal:\nandroid 3/4 :ga-failed:", "Production:\nandroid :ga-pending:"),
+      "android",
+      Status.Success,
+    );
+    const fields = (laterField[1] as any).fields;
+    expect(fields[0].text).toBe("Internal:\nandroid 3/4 :ga-failed:");
+    expect(fields[1].text).toBe("Production:\nandroid :ga-success:");
+  });
+
+  it("does not match a label that only shares the build name as a prefix", () => {
+    const blocks = statusBlocks(
+      "Android:\nandroid-ab :ga-pending: | android-a :ga-pending: | android-a 3/4 :ga-failed:",
+    );
+
+    expect(updateBuildInBlocks(blocks, "android-a", Status.Success)).toEqual(
+      statusBlocks(
+        "Android:\nandroid-ab :ga-pending: | android-a :ga-success: | android-a 3/4 :ga-failed:",
+      ),
+    );
+    expect(updateBuildInBlocks(blocks, "android", Status.Success)).toEqual(blocks);
+    expect(
+      updateBuildInBlocks(
+        statusBlocks("Android:\nandroid-ab :ga-pending:"),
+        "android-a",
+        Status.Success,
+      ),
+    ).toEqual(statusBlocks("Android:\nandroid-ab :ga-pending:"));
+  });
+
+  it("scopes the prefix match to the given group", () => {
+    const blocks = statusBlocks(
+      "Android :internal-bird::\nAAB 3/4 :ga-failed:",
+      "Android :production-bird::\nAAB 2/4 :ga-failed:",
+    );
+
+    const updated = updateBuildInBlocks(
+      blocks,
+      "AAB",
+      Status.Running,
+      undefined,
+      "Android :production-bird:",
+    );
+
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe("Android :internal-bird::\nAAB 3/4 :ga-failed:");
+    expect(fields[1].text).toBe("Android :production-bird::\nAAB 2/4 :ga-running:");
+  });
 });
 
 describe("cancelAllInBlocks", () => {

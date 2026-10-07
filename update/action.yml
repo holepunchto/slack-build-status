@@ -12,7 +12,11 @@ inputs:
     description: Slack message timestamp to update (e.g. "1234567890.123456")
     required: true
   build-name:
-    description: Name of the build to update (must match a name from the create step, e.g. "apk")
+    description: >
+      Name of the build to update (must match a name from the create step, e.g. "apk").
+      A build renamed with label also matches when its label starts with build-name
+      and a space ("android-a" matches "android-a 31/34", not "android-ab"); an
+      exact match wins over a prefix match.
     required: true
   status:
     description: New status — one of "success", "failure", "cancelled", "skipped", "warning", or GitHub job.status
