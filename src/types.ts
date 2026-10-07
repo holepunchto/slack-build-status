@@ -6,6 +6,7 @@ export enum Status {
   Running = "running",
   Success = "success",
   Shipped = "shipped",
+  Warning = "warning",
   Failure = "failure",
   Cancelled = "cancelled",
   Skipped = "skipped",
@@ -17,6 +18,7 @@ export const STATUS_EMOJI: Record<Status, string> = {
   [Status.Running]: ":ga-running:",
   [Status.Success]: ":ga-success:",
   [Status.Shipped]: ":rocket:",
+  [Status.Warning]: ":warning:",
   [Status.Failure]: ":ga-failed:",
   [Status.Cancelled]: ":ga-cancelled:",
   [Status.Skipped]: ":ga-skipped:",
@@ -54,13 +56,16 @@ export interface CreateMessageParams {
  * value emitted by callers after a successful remote upload (e.g. Firebase
  * App Distribution, TestFlight). "queued" represents a build that hasn't
  * started yet (waiting for a runner) - distinct from "pending", which is
- * used for builds that are downstream of a currently-running build. */
+ * used for builds that are downstream of a currently-running build.
+ * "warning" marks a build that finished but needs attention. */
 export function mapJobStatus(jobStatus: string): Status {
   switch (jobStatus.toLowerCase()) {
     case "success":
       return Status.Success;
     case "shipped":
       return Status.Shipped;
+    case "warning":
+      return Status.Warning;
     case "failure":
       return Status.Failure;
     case "cancelled":

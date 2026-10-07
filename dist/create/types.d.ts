@@ -5,6 +5,7 @@ export declare enum Status {
     Running = "running",
     Success = "success",
     Shipped = "shipped",
+    Warning = "warning",
     Failure = "failure",
     Cancelled = "cancelled",
     Skipped = "skipped"
@@ -39,5 +40,6 @@ export interface CreateMessageParams {
  * value emitted by callers after a successful remote upload (e.g. Firebase
  * App Distribution, TestFlight). "queued" represents a build that hasn't
  * started yet (waiting for a runner) - distinct from "pending", which is
- * used for builds that are downstream of a currently-running build. */
+ * used for builds that are downstream of a currently-running build.
+ * "warning" marks a build that finished but needs attention. */
 export declare function mapJobStatus(jobStatus: string): Status;

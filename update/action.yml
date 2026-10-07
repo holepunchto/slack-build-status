@@ -12,10 +12,15 @@ inputs:
     description: Slack message timestamp to update (e.g. "1234567890.123456")
     required: true
   build-name:
-    description: Name of the build to update (must match a name from the create step, e.g. "apk")
+    description: >
+      Build to update, matched case-insensitively against its current label (the
+      label from create, or the last label set by update), e.g. "apk".
+      A build renamed with label also matches when its label starts with build-name
+      and a space ("android-a" matches "android-a 31/34", not "android-ab"); an
+      exact match wins over a prefix match.
     required: true
   status:
-    description: New status — one of "success", "failure", "cancelled", "skipped", or GitHub job.status
+    description: New status — one of "success", "failure", "cancelled", "skipped", "warning", or GitHub job.status
     required: true
   link:
     description: URL to attach to this build (e.g. artifact download link)
@@ -28,11 +33,31 @@ inputs:
       identically-labeled builds (e.g. matrix runs that produce "AAB" in two
       flavor groups).
     required: false
+  label:
+    description: >
+      New display label for the matched build (e.g. "APK 1.2.3"). build-name still
+      matches the current label; other builds stay unchanged.
+    required: false
   file-path:
     description: File to upload to the thread and link to this build (e.g. "build/outputs/app.apk")
     required: false
+  changelog:
+    description: >
+      Changelog text that replaces the changelog block of the message, or is added
+      after the statuses when the message has none (#N and (#N) references are
+      auto-linked to GitHub PRs). Omit it to keep the current changelog.
+    required: false
+  changelog-compare-url:
+    description: 'Compare URL for the changelog header (e.g. "https://github.com/owner/repo/compare/v1.0.0...v1.1.0")'
+    required: false
+  repo:
+    description: GitHub repo (owner/name) for PR link detection. Defaults to current repo. (e.g. "owner/repo")
+    required: false
+  notify-users:
+    description: Slack user mentions to CC in thread after the update (e.g. "<@U123> <@U456>")
+    required: false
   also-update:
-    description: 'JSON array of additional updates: [{"name":"...","status":"...","link":"..."}]'
+    description: 'JSON array of additional updates: [{"name":"...","status":"...","link":"...","group":"...","label":"..."}]'
     required: false
 
 runs:

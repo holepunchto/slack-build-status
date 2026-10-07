@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
+import * as github from "@actions/github";
 import type { Block, KnownBlock } from "@slack/web-api";
-import { updateBuildInBlocks } from "./block-kit.js";
+import { updateBuildInBlocks, upsertChangelogBlock } from "./block-kit.js";
 import { SlackClient } from "./slack-client.js";
 import { mapJobStatus } from "./types.js";
 
@@ -9,6 +10,7 @@ interface AlsoUpdate {
   status: string;
   link?: string;
   group?: string;
+  label?: string;
 }
 
 function hasGroupHeading(blocks: (KnownBlock | Block)[], group: string): boolean {
@@ -33,6 +35,10 @@ async function run(): Promise<void> {
     const filePath = core.getInput("file-path") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
     const topLevelGroup = core.getInput("group") || undefined;
+    const label = core.getInput("label") || undefined;
+    const changelog = core.getInput("changelog") || undefined;
+    const changelogCompareUrl = core.getInput("changelog-compare-url") || undefined;
+    const notifyUsers = core.getInput("notify-users") || undefined;
 
     const client = new SlackClient(token);
 
@@ -54,7 +60,7 @@ async function run(): Promise<void> {
     const groupSuffix = topLevelGroup ? ` in group "${topLevelGroup}"` : "";
     core.info(`Updating build "${buildName}" to "${statusInput}"${groupSuffix} (ts: ${ts})`);
 
-    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link, topLevelGroup);
+    let blocks = updateBuildInBlocks(message.blocks, buildName, status, link, topLevelGroup, label);
     if (topLevelGroup && !hasGroupHeading(message.blocks, topLevelGroup)) {
       core.warning(
         `Group '${topLevelGroup}' not found in message; update for "${buildName}" skipped`,
@@ -68,7 +74,14 @@ async function run(): Promise<void> {
         const entrySuffix = updateGroup ? ` in group "${updateGroup}"` : "";
         core.info(`Also updating "${update.name}" to "${update.status}"${entrySuffix}`);
         const updateStatus = mapJobStatus(update.status);
-        blocks = updateBuildInBlocks(blocks, update.name, updateStatus, update.link, updateGroup);
+        blocks = updateBuildInBlocks(
+          blocks,
+          update.name,
+          updateStatus,
+          update.link,
+          updateGroup,
+          update.label || undefined,
+        );
         if (updateGroup && !hasGroupHeading(message.blocks, updateGroup)) {
           core.warning(
             `Group '${updateGroup}' not found in message; update for "${update.name}" skipped`,
@@ -77,8 +90,19 @@ async function run(): Promise<void> {
       }
     }
 
+    if (changelog) {
+      const repo =
+        core.getInput("repo") || `${github.context.repo.owner}/${github.context.repo.repo}`;
+      core.info("Replacing changelog");
+      blocks = upsertChangelogBlock(blocks, changelog, changelogCompareUrl, repo);
+    }
+
     await client.updateMessage(channelId, ts, blocks);
     core.info("Message updated successfully");
+
+    if (notifyUsers) {
+      await client.postThreadReply(channelId, ts, `CC: ${notifyUsers}`);
+    }
   } catch (error) {
     core.setFailed(error instanceof Error ? error.message : String(error));
   }

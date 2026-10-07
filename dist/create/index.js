@@ -47470,6 +47470,7 @@ var types_Status;
     Status["Running"] = "running";
     Status["Success"] = "success";
     Status["Shipped"] = "shipped";
+    Status["Warning"] = "warning";
     Status["Failure"] = "failure";
     Status["Cancelled"] = "cancelled";
     Status["Skipped"] = "skipped";
@@ -47480,6 +47481,7 @@ const types_STATUS_EMOJI = {
     [types_Status.Running]: ":ga-running:",
     [types_Status.Success]: ":ga-success:",
     [types_Status.Shipped]: ":rocket:",
+    [types_Status.Warning]: ":warning:",
     [types_Status.Failure]: ":ga-failed:",
     [types_Status.Cancelled]: ":ga-cancelled:",
     [types_Status.Skipped]: ":ga-skipped:",
@@ -47488,13 +47490,16 @@ const types_STATUS_EMOJI = {
  * value emitted by callers after a successful remote upload (e.g. Firebase
  * App Distribution, TestFlight). "queued" represents a build that hasn't
  * started yet (waiting for a runner) - distinct from "pending", which is
- * used for builds that are downstream of a currently-running build. */
+ * used for builds that are downstream of a currently-running build.
+ * "warning" marks a build that finished but needs attention. */
 function mapJobStatus(jobStatus) {
     switch (jobStatus.toLowerCase()) {
         case "success":
             return types_Status.Success;
         case "shipped":
             return types_Status.Shipped;
+        case "warning":
+            return types_Status.Warning;
         case "failure":
             return types_Status.Failure;
         case "cancelled":
@@ -47567,6 +47572,20 @@ function buildChangelogBlock(changelog, changelogCompareUrl, repo) {
         elements,
     };
 }
+function upsertChangelogBlock(blocks, changelog, changelogCompareUrl, repo) {
+    const result = structuredClone(blocks);
+    const changelogBlock = buildChangelogBlock(changelog, changelogCompareUrl, repo);
+    if (!changelogBlock)
+        return result;
+    const existingIndex = result.findIndex((b) => "block_id" in b && b.block_id === "changelog");
+    if (existingIndex !== -1) {
+        result[existingIndex] = changelogBlock;
+        return result;
+    }
+    const statusesIndex = result.findIndex((b) => "block_id" in b && b.block_id === "statuses");
+    result.splice(statusesIndex === -1 ? result.length : statusesIndex + 1, 0, changelogBlock);
+    return result;
+}
 function buildMessage(channelId, params, repo) {
     const { builds, version, branch, gitUrl, changelog, changelogCompareUrl, icon, extraBadges, showStatus = true, } = params;
     const groups = new Map();
@@ -47629,11 +47648,15 @@ function findStatusFields(blocks) {
     }
     return null;
 }
-function updateBuildInBlocks(blocks, buildName, newStatus, link, group) {
+function updateBuildInBlocks(blocks, buildName, newStatus, link, group, label) {
     const result = structuredClone(blocks);
     const fields = findStatusFields(result);
     if (!fields)
         return result;
+    const exactName = buildName.toLowerCase();
+    const prefixName = `${exactName} `;
+    let exactMatch;
+    let prefixMatch;
     for (const field of fields) {
         const lines = field.text.split("\n");
         const hasGroup = lines.length >= 2;
@@ -47644,21 +47667,31 @@ function updateBuildInBlocks(blocks, buildName, newStatus, link, group) {
         }
         const statusLine = hasGroup ? lines.slice(1).join("\n") : lines[0];
         const parsed = parseStatusText(statusLine);
-        const buildIndex = parsed.findIndex((p) => p.name === buildName || p.name.toLowerCase() === buildName.toLowerCase());
-        if (buildIndex === -1)
-            continue;
-        parsed[buildIndex].emoji = STATUS_EMOJI[newStatus];
-        parsed[buildIndex].link = link ?? parsed[buildIndex].link;
-        const rendered = parsed
-            .map((p) => {
-            if (p.link)
-                return `<${p.link}|${p.name} ${p.emoji}>`;
-            return `${p.name} ${p.emoji}`;
-        })
-            .join(" | ");
-        field.text = hasGroup ? `${lines[0]}\n${rendered}` : rendered;
-        break;
+        const exactIndex = parsed.findIndex((p) => p.name.toLowerCase() === exactName);
+        if (exactIndex !== -1) {
+            exactMatch = { field, lines, parsed, index: exactIndex };
+            break;
+        }
+        const prefixIndex = parsed.findIndex((p) => p.name.toLowerCase().startsWith(prefixName));
+        if (prefixIndex !== -1 && !prefixMatch) {
+            prefixMatch = { field, lines, parsed, index: prefixIndex };
+        }
     }
+    const match = exactMatch ?? prefixMatch;
+    if (!match)
+        return result;
+    const { field, lines, parsed, index } = match;
+    parsed[index].emoji = STATUS_EMOJI[newStatus];
+    parsed[index].link = link ?? parsed[index].link;
+    parsed[index].name = label ?? parsed[index].name;
+    const rendered = parsed
+        .map((p) => {
+        if (p.link)
+            return `<${p.link}|${p.name} ${p.emoji}>`;
+        return `${p.name} ${p.emoji}`;
+    })
+        .join(" | ");
+    field.text = lines.length >= 2 ? `${lines[0]}\n${rendered}` : rendered;
     return result;
 }
 function cancelAllInBlocks(blocks) {
