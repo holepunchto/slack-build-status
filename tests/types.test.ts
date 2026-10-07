@@ -17,10 +17,15 @@ describe("mapJobStatus", () => {
     expect(mapJobStatus("queued")).toBe(Status.Queued);
   });
 
+  it("maps warning - a build that finished with non-fatal problems", () => {
+    expect(mapJobStatus("warning")).toBe(Status.Warning);
+  });
+
   it("is case-insensitive", () => {
     expect(mapJobStatus("Success")).toBe(Status.Success);
     expect(mapJobStatus("FAILURE")).toBe(Status.Failure);
     expect(mapJobStatus("Shipped")).toBe(Status.Shipped);
+    expect(mapJobStatus("Warning")).toBe(Status.Warning);
   });
 
   it("defaults to Failure for unknown values", () => {
@@ -44,5 +49,9 @@ describe("STATUS_EMOJI", () => {
   it("uses :ga-queued: for the Queued status - distinct from :ga-pending:", () => {
     expect(STATUS_EMOJI[Status.Queued]).toBe(":ga-queued:");
     expect(STATUS_EMOJI[Status.Queued]).not.toBe(STATUS_EMOJI[Status.Pending]);
+  });
+
+  it("uses :warning: for the Warning status", () => {
+    expect(STATUS_EMOJI[Status.Warning]).toBe(":warning:");
   });
 });

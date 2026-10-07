@@ -8,6 +8,7 @@ import {
   parseStatusText,
   renderBuildStatus,
   updateBuildInBlocks,
+  upsertChangelogBlock,
 } from "../src/block-kit.js";
 import { type Build, STATUS_EMOJI, Status } from "../src/types.js";
 import sampleMessage from "./fixtures/sample-message.json";
@@ -99,6 +100,17 @@ describe("parseStatusText", () => {
     expect(parsed).toEqual([
       { name: "apk", emoji: ":ga-success:", link: "https://dl.example.com/apk" },
       { name: "SV", emoji: ":ga-failed:" },
+    ]);
+  });
+
+  it("round-trips the warning status", () => {
+    const builds: Build[] = [
+      { name: "apk", label: "APK", status: Status.Warning, link: "https://dl.example.com/apk" },
+      { name: "aab", label: "AAB", status: Status.Warning },
+    ];
+    expect(parseStatusText(buildStatusText(builds))).toEqual([
+      { name: "APK", emoji: ":warning:", link: "https://dl.example.com/apk" },
+      { name: "AAB", emoji: ":warning:" },
     ]);
   });
 });
@@ -387,6 +399,37 @@ describe("updateBuildInBlocks", () => {
     expect(fields[0].text).toContain(":ga-failed:");
   });
 
+  it("moves a build from warning to another status", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    const warned = updateBuildInBlocks(blocks, "apk", Status.Warning, "https://keep.me");
+    expect((warned[1] as any).fields[0].text).toContain("<https://keep.me|apk :warning:>");
+
+    const updated = updateBuildInBlocks(warned, "apk", Status.Success);
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe(
+      "Android:\n<https://keep.me|apk :ga-success:> | SV :ga-pending: | aab :ga-pending:",
+    );
+  });
+
+  it("replaces the matched build's label when a new label is given", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    const withLink = updateBuildInBlocks(blocks, "apk", Status.Running, "https://keep.me");
+    const updated = updateBuildInBlocks(
+      withLink,
+      "apk",
+      Status.Success,
+      undefined,
+      undefined,
+      "APK 1.2.3",
+    );
+
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe(
+      "Android:\n<https://keep.me|APK 1.2.3 :ga-success:> | SV :ga-pending: | aab :ga-pending:",
+    );
+    expect(fields[1].text).toBe("iOS:\nTestflight :ga-pending:");
+  });
+
   it("updates status in fields without group prefix", () => {
     const blocks = [
       { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
@@ -479,6 +522,99 @@ describe("updateBuildInBlocks", () => {
     expect(fields[0].text).toBe("Android :internal-bird::\nAAB :ga-success:");
     expect(fields[1].text).toBe("Android :production-bird::\nAAB :ga-running:");
   });
+
+  function statusBlocks(...texts: string[]) {
+    return [
+      { type: "section", block_id: "header", text: { type: "mrkdwn", text: "header" } },
+      {
+        type: "section",
+        block_id: "statuses",
+        fields: texts.map((text) => ({ type: "mrkdwn", text })),
+      },
+    ];
+  }
+
+  it("matches a renamed build whose label starts with the build name and a space", () => {
+    const blocks = statusBlocks(
+      "Android:\nandroid-a 31/34 :ga-failed: | <https://keep.me|Android-B 34/34 :ga-success:>",
+    );
+
+    const updated = updateBuildInBlocks(blocks, "android-a", Status.Running);
+    expect((updated[1] as any).fields[0].text).toBe(
+      "Android:\nandroid-a 31/34 :ga-running: | <https://keep.me|Android-B 34/34 :ga-success:>",
+    );
+
+    const relabeled = updateBuildInBlocks(
+      updated,
+      "android-b",
+      Status.Failure,
+      undefined,
+      undefined,
+      "android-b 33/34",
+    );
+    expect((relabeled[1] as any).fields[0].text).toBe(
+      "Android:\nandroid-a 31/34 :ga-running: | <https://keep.me|android-b 33/34 :ga-failed:>",
+    );
+  });
+
+  it("prefers an exact label match over a prefix match", () => {
+    const sameField = updateBuildInBlocks(
+      statusBlocks("Android:\nandroid 3/4 :ga-failed: | android :ga-pending:"),
+      "android",
+      Status.Success,
+    );
+    expect((sameField[1] as any).fields[0].text).toBe(
+      "Android:\nandroid 3/4 :ga-failed: | android :ga-success:",
+    );
+
+    const laterField = updateBuildInBlocks(
+      statusBlocks("Internal:\nandroid 3/4 :ga-failed:", "Production:\nandroid :ga-pending:"),
+      "android",
+      Status.Success,
+    );
+    const fields = (laterField[1] as any).fields;
+    expect(fields[0].text).toBe("Internal:\nandroid 3/4 :ga-failed:");
+    expect(fields[1].text).toBe("Production:\nandroid :ga-success:");
+  });
+
+  it("does not match a label that only shares the build name as a prefix", () => {
+    const blocks = statusBlocks(
+      "Android:\nandroid-ab :ga-pending: | android-a :ga-pending: | android-a 3/4 :ga-failed:",
+    );
+
+    expect(updateBuildInBlocks(blocks, "android-a", Status.Success)).toEqual(
+      statusBlocks(
+        "Android:\nandroid-ab :ga-pending: | android-a :ga-success: | android-a 3/4 :ga-failed:",
+      ),
+    );
+    expect(updateBuildInBlocks(blocks, "android", Status.Success)).toEqual(blocks);
+    expect(
+      updateBuildInBlocks(
+        statusBlocks("Android:\nandroid-ab :ga-pending:"),
+        "android-a",
+        Status.Success,
+      ),
+    ).toEqual(statusBlocks("Android:\nandroid-ab :ga-pending:"));
+  });
+
+  it("scopes the prefix match to the given group", () => {
+    const blocks = statusBlocks(
+      "Android :internal-bird::\nAAB 3/4 :ga-failed:",
+      "Android :production-bird::\nAAB 2/4 :ga-failed:",
+    );
+
+    const updated = updateBuildInBlocks(
+      blocks,
+      "AAB",
+      Status.Running,
+      undefined,
+      "Android :production-bird:",
+    );
+
+    const fields = (updated[1] as any).fields;
+    expect(fields[0].text).toBe("Android :internal-bird::\nAAB 3/4 :ga-failed:");
+    expect(fields[1].text).toBe("Android :production-bird::\nAAB 2/4 :ga-running:");
+  });
 });
 
 describe("cancelAllInBlocks", () => {
@@ -530,5 +666,47 @@ describe("buildChangelogBlock", () => {
 
   it("returns null when changelog is empty", () => {
     expect(buildChangelogBlock("", undefined, "org/repo")).toBeNull();
+  });
+});
+
+describe("upsertChangelogBlock", () => {
+  it("replaces the existing changelog block in place", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    const updated = upsertChangelogBlock(
+      blocks,
+      "fix bug (#42)",
+      "https://github.com/org/repo/compare/v1.2.0...main",
+      "org/repo",
+    ) as any[];
+
+    expect(updated).toHaveLength(3);
+    expect(updated[0]).toEqual(blocks[0]);
+    expect(updated[1]).toEqual(blocks[1]);
+    expect(updated[2].block_id).toBe("changelog");
+    expect(updated[2].elements[0].text).toContain(
+      "*<https://github.com/org/repo/compare/v1.2.0...main|Changelog:>*",
+    );
+    expect(updated[2].elements[0].text).toContain("/pull/42|(#42)>");
+    expect(updated[2].elements[0].text).not.toContain("feat: add login");
+  });
+
+  it("inserts the changelog block after the statuses block when none exists", () => {
+    const footer = { type: "context", block_id: "footer", elements: [] };
+    const blocks = [sampleMessage.blocks[0], sampleMessage.blocks[1], footer];
+    const updated = upsertChangelogBlock(blocks, "fix bug (#42)", undefined, "org/repo") as any[];
+
+    expect(updated.map((b) => b.block_id)).toEqual(["header", "statuses", "changelog", "footer"]);
+    expect(updated[2].elements[0].text).toContain("/pull/42|(#42)>");
+  });
+
+  it("returns unchanged blocks when changelog is empty", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    expect(upsertChangelogBlock(blocks, "", undefined, "org/repo")).toEqual(blocks);
+  });
+
+  it("does not mutate the original blocks", () => {
+    const blocks = structuredClone(sampleMessage.blocks);
+    upsertChangelogBlock(blocks, "fix bug (#42)", undefined, "org/repo");
+    expect(blocks).toEqual(sampleMessage.blocks);
   });
 });
