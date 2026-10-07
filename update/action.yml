@@ -13,7 +13,8 @@ inputs:
     required: true
   build-name:
     description: >
-      Name of the build to update (must match a name from the create step, e.g. "apk").
+      Build to update, matched case-insensitively against its current label (the
+      label from create, or the last label set by update), e.g. "apk".
       A build renamed with label also matches when its label starts with build-name
       and a space ("android-a" matches "android-a 31/34", not "android-ab"); an
       exact match wins over a prefix match.

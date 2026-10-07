@@ -39,7 +39,7 @@ Update a specific build's status in an existing message.
 | `token` | yes | `xoxb-1234567890-1234567890123-abc` | Slack Bot OAuth token |
 | `channel-id` | yes | `C0123456789` | Slack channel ID |
 | `ts` | yes | `1234567890.123456` | Message timestamp from `create` |
-| `build-name` | yes | `apk` | Build name to update (must match `name` from `create`) |
+| `build-name` | yes | `apk` | Build to update, matched case-insensitively against its current label (the `label` from `create`, or the last `label` set by `update`) |
 | `status` | yes | `success` | New status: `success`, `failure`, `cancelled`, `skipped`, `warning`, or GitHub `job.status` |
 | `link` | no | `https://example.com/download/app.apk` | URL to attach (e.g. artifact download link) |
 | `label` | no | `APK 1.2.3` | New display label for the matched build. `build-name` still matches the current label, or a label that starts with `build-name` and a space (`android-a` matches `android-a 31/34`, not `android-ab`); an exact match wins |

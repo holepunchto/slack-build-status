@@ -80,7 +80,7 @@ async function run(): Promise<void> {
           updateStatus,
           update.link,
           updateGroup,
-          update.label,
+          update.label || undefined,
         );
         if (updateGroup && !hasGroupHeading(message.blocks, updateGroup)) {
           core.warning(
