@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SlackApiError, SlackClient } from "../src/slack-client.js";
 import type { KnownBlock } from "@slack/web-api";
@@ -111,6 +114,41 @@ describe("SlackClient", () => {
     it("throws on API failure", async () => {
       mockHistory.mockResolvedValue({ ok: false, error: "channel_not_found" });
       await expect(client.getMessage("C999", "123.456")).rejects.toThrow(SlackApiError);
+    });
+  });
+
+  describe("uploadFile", () => {
+    const filePath = path.join(os.tmpdir(), "slack-client-upload.apk");
+
+    beforeEach(() => {
+      fs.writeFileSync(filePath, "apk");
+      mockUploadV2.mockResolvedValue({
+        ok: true,
+        files: [{ files: [{ id: "F123", permalink: "https://slack.example/F123" }] }],
+      });
+    });
+
+    it("posts the initial comment with the file", async () => {
+      const result = await client.uploadFile("C123", "123.456", filePath, undefined, "sha256 abc");
+
+      expect(result).toEqual(
+        expect.objectContaining({ fileId: "F123", fileUrl: "https://slack.example/F123" }),
+      );
+      expect(mockUploadV2).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channel_id: "C123",
+          thread_ts: "123.456",
+          filename: "slack-client-upload.apk",
+          initial_comment: "sha256 abc",
+        }),
+      );
+    });
+
+    it("omits the initial comment when not provided", async () => {
+      await client.uploadFile("C123", "123.456", filePath);
+
+      const call = mockUploadV2.mock.calls[0][0];
+      expect(call).not.toHaveProperty("initial_comment");
     });
   });
 

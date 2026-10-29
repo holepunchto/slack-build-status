@@ -44,6 +44,7 @@ Update a specific build's status in an existing message.
 | `link` | no | `https://example.com/download/app.apk` | URL to attach (e.g. artifact download link) |
 | `label` | no | `APK 1.2.3` | New display label for the matched build. `build-name` still matches the current label, or a label that starts with `build-name` and a space (`android-a` matches `android-a 31/34`, not `android-ab`); an exact match wins |
 | `file-path` | no | `build/outputs/app.apk` | File to upload to thread and link to this build |
+| `file-comment` | no | `SHA2-256(app.apk)= 9f86d0...` | Message text posted with the `file-path` file |
 | `also-update` | no | `[{"name":"aab","status":"running"}]` | JSON array of additional updates: `{name, status, link?, group?, label?}` |
 | `changelog` | no | `• 91a4e0548 - feat: add login (#1)` | Replaces the message changelog, or adds one after the statuses (`#N` and `(#N)` are auto-linked). Omit to keep the current changelog |
 | `changelog-compare-url` | no | `https://github.com/owner/repo/compare/v1.0.0...v1.1.0` | Compare URL for the changelog header |
@@ -71,6 +72,7 @@ Upload a file to the message thread.
 | `ts` | yes | `1234567890.123456` | Message thread timestamp |
 | `file-path` | yes | `build/outputs/app.apk` | Path to the file to upload |
 | `filename` | no | `app-v1.2.3.apk` | Override filename (defaults to basename) |
+| `file-comment` | no | `SHA2-256(app.apk)= 9f86d0...` | Message text posted with the file |
 
 | Output | Description |
 |---|---|
