@@ -33,6 +33,7 @@ async function run(): Promise<void> {
     const statusInput = core.getInput("status", { required: true });
     let link = core.getInput("link") || undefined;
     const filePath = core.getInput("file-path") || undefined;
+    const fileComment = core.getInput("file-comment") || undefined;
     const alsoUpdateJson = core.getInput("also-update") || undefined;
     const topLevelGroup = core.getInput("group") || undefined;
     const label = core.getInput("label") || undefined;
@@ -44,7 +45,13 @@ async function run(): Promise<void> {
 
     if (filePath) {
       core.info(`Uploading "${filePath}" to thread`);
-      const { fileUrl, _raw } = await client.uploadFile(channelId, ts, filePath);
+      const { fileUrl, _raw } = await client.uploadFile(
+        channelId,
+        ts,
+        filePath,
+        undefined,
+        fileComment,
+      );
       if (fileUrl) {
         link = link ?? fileUrl;
         core.info(`File uploaded: ${fileUrl}`);

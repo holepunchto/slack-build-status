@@ -109,6 +109,7 @@ export class SlackClient {
     threadTs: string,
     filePath: string,
     filename?: string,
+    initialComment?: string,
   ): Promise<{ fileUrl: string; fileId: string; _raw: unknown }> {
     const resolvedFilename = filename ?? path.basename(filePath);
     const fileContent = fs.readFileSync(filePath);
@@ -118,6 +119,7 @@ export class SlackClient {
       thread_ts: threadTs,
       file: fileContent,
       filename: resolvedFilename,
+      ...(initialComment ? { initial_comment: initialComment } : {}),
     });
 
     // filesUploadV2 nests files as result.files[0].files[0]

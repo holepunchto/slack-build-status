@@ -15,6 +15,7 @@ vi.mock("@actions/core", () => ({
 const mockGetMessage = vi.fn();
 const mockUpdateMessage = vi.fn();
 const mockPostThreadReply = vi.fn();
+const mockUploadFile = vi.fn();
 vi.mock("../src/slack-client.js", () => ({
   SlackClient: vi.fn().mockImplementation(() => ({
     getMessage: mockGetMessage,
@@ -28,6 +29,11 @@ describe("update action", () => {
     mockGetMessage.mockResolvedValue(structuredClone(sampleMessage));
     mockUpdateMessage.mockResolvedValue(undefined);
     mockPostThreadReply.mockResolvedValue(undefined);
+    mockUploadFile.mockResolvedValue({
+      fileUrl: "https://slack.example/F123",
+      fileId: "F123",
+      _raw: {},
+    });
   });
 
   function setupInputs(overrides: Record<string, string> = {}) {
@@ -335,11 +341,41 @@ describe("update action", () => {
         getMessage: mockGetMessage,
         updateMessage: mockUpdateMessage,
         postThreadReply: mockPostThreadReply,
+        uploadFile: mockUploadFile,
       })),
     }));
     await import("../src/update.js");
     await new Promise((r) => setTimeout(r, 50));
   }
+
+  it("uploads the file with file-comment as its initial comment", async () => {
+    await runUpdate({
+      "file-path": "build/keet-1.2.3-10203.apk",
+      "file-comment": "SHA2-256(keet-1.2.3-10203.apk)= abc",
+    });
+
+    expect(mockUploadFile).toHaveBeenCalledWith(
+      "C123456",
+      "1234567890.123456",
+      "build/keet-1.2.3-10203.apk",
+      undefined,
+      "SHA2-256(keet-1.2.3-10203.apk)= abc",
+    );
+    const [, , blocks] = mockUpdateMessage.mock.calls[0];
+    expect((blocks[1] as any).fields[0].text).toContain("https://slack.example/F123");
+  });
+
+  it("uploads the file without a comment when file-comment is empty", async () => {
+    await runUpdate({ "file-path": "build/app.apk" });
+
+    expect(mockUploadFile).toHaveBeenCalledWith(
+      "C123456",
+      "1234567890.123456",
+      "build/app.apk",
+      undefined,
+      undefined,
+    );
+  });
 
   it("replaces the changelog block when changelog is set", async () => {
     await runUpdate({

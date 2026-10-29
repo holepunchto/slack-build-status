@@ -41,6 +41,9 @@ inputs:
   file-path:
     description: File to upload to the thread and link to this build (e.g. "build/outputs/app.apk")
     required: false
+  file-comment:
+    description: Message text posted with the uploaded file-path file (e.g. "SHA2-256(app.apk)= 9f86d0...")
+    required: false
   changelog:
     description: >
       Changelog text that replaces the changelog block of the message, or is added

@@ -17,6 +17,9 @@ inputs:
   filename:
     description: Override filename (defaults to basename of file-path, e.g. "app-v1.2.3.apk")
     required: false
+  file-comment:
+    description: Message text posted with the file (e.g. "SHA2-256(app.apk)= 9f86d0...")
+    required: false
 
 outputs:
   file-url:
